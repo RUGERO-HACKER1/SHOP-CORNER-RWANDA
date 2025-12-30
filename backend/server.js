@@ -13,9 +13,13 @@ app.use(cors());
 app.use(express.json());
 
 // Test DB Connection
-db.sequelize.authenticate()
-    .then(() => console.log('Database connected...'))
-    .catch(err => console.log('Error: ' + err));
+// Sync DB and Start Server
+db.sequelize.sync({ alter: true })
+    .then(() => {
+        console.log('Database synced...');
+        app.listen(PORT, () => console.log(`Server running on port ${PORT}`));
+    })
+    .catch(err => console.log('Error syncing DB: ' + err));
 
 // Routes
 app.use('/api/auth', require('./routes/auth.routes'));
@@ -28,7 +32,7 @@ app.use('/api/contact', require('./routes/contact.routes'));
 app.get('/', (req, res) => res.send('API Running'));
 
 // Start Server
-const server = app.listen(PORT, () => console.log(`Server running on port ${PORT}`));
+// Server started in sync block
 
 // Handle unhandled promise rejections
 process.on('unhandledRejection', (err, promise) => {
