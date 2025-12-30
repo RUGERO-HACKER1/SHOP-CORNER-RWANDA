@@ -26,7 +26,7 @@ const Login = () => {
     return (
         <div className="min-h-[calc(100vh-130px)] flex items-center justify-center bg-gray-50 px-4">
             <div className="max-w-md w-full bg-white p-8 rounded-lg shadow-md">
-                <h2 className="text-2xl font-bold text-center mb-6">Sign In to Shein Clone</h2>
+                <h2 className="text-2xl font-bold text-center mb-6">Sign In</h2>
 
                 {error && (
                     <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded mb-4 text-sm">

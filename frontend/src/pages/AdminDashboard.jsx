@@ -1,7 +1,8 @@
+
 import { useState, useEffect, useMemo } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { useNavigate } from 'react-router-dom';
-import { Trash2, Plus, Upload, X, Package, Users, ShoppingBag, LayoutDashboard, DollarSign, Edit, BarChart, Mail } from 'lucide-react';
+import { Trash2, Plus, Upload, X, Package, Users, ShoppingBag, LayoutDashboard, DollarSign, Edit, BarChart, Mail, Menu } from 'lucide-react';
 import { API_URL } from '../config';
 
 const AdminDashboard = () => {
@@ -10,6 +11,7 @@ const AdminDashboard = () => {
 
     // Tabs
     const [activeTab, setActiveTab] = useState('overview');
+    const [isSidebarOpen, setIsSidebarOpen] = useState(false);
 
     // Data
     const [products, setProducts] = useState([]);
@@ -292,28 +294,31 @@ const AdminDashboard = () => {
 
     return (
         <div className="flex min-h-screen bg-gray-50 font-sans">
-            {/* Sidebar */}
-            <aside className="w-64 bg-white shadow-sm border-r z-10 hidden md:block">
-                <div className="p-6">
+            {/* Sidebar - Desktop & Mobile Drawer */}
+            <aside className={`fixed inset-y-0 left-0 bg-white shadow-lg border-r z-50 transform transition-transform duration-300 ease-in-out md:translate-x-0 md:static md:block w-64 ${isSidebarOpen ? 'translate-x-0' : '-translate-x-full'}`}>
+                <div className="flex justify-between items-center p-6">
                     <h1 className="text-xl font-black uppercase tracking-tighter">Admin Panel</h1>
+                    <button onClick={() => setIsSidebarOpen(false)} className="md:hidden">
+                        <X className="w-6 h-6" />
+                    </button>
                 </div>
-                <nav className="mt-4 px-4 space-y-2">
-                    <button onClick={() => setActiveTab('overview')} className={`flex items-center w-full px-4 py-3 rounded-lg text-sm font-medium transition ${activeTab === 'overview' ? 'bg-black text-white' : 'text-gray-600 hover:bg-gray-100'}`}>
+                <nav className="px-4 space-y-2">
+                    <button onClick={() => { setActiveTab('overview'); setIsSidebarOpen(false); }} className={`flex items-center w-full px-4 py-3 rounded-lg text-sm font-medium transition ${activeTab === 'overview' ? 'bg-black text-white' : 'text-gray-600 hover:bg-gray-100'}`}>
                         <LayoutDashboard className="w-5 h-5 mr-3" /> Overview
                     </button>
-                    <button onClick={() => setActiveTab('analytics')} className={`flex items-center w-full px-4 py-3 rounded-lg text-sm font-medium transition ${activeTab === 'analytics' ? 'bg-black text-white' : 'text-gray-600 hover:bg-gray-100'}`}>
+                    <button onClick={() => { setActiveTab('analytics'); setIsSidebarOpen(false); }} className={`flex items-center w-full px-4 py-3 rounded-lg text-sm font-medium transition ${activeTab === 'analytics' ? 'bg-black text-white' : 'text-gray-600 hover:bg-gray-100'}`}>
                         <BarChart className="w-5 h-5 mr-3" /> Analytics
                     </button>
-                    <button onClick={() => setActiveTab('products')} className={`flex items-center w-full px-4 py-3 rounded-lg text-sm font-medium transition ${activeTab === 'products' ? 'bg-black text-white' : 'text-gray-600 hover:bg-gray-100'}`}>
+                    <button onClick={() => { setActiveTab('products'); setIsSidebarOpen(false); }} className={`flex items-center w-full px-4 py-3 rounded-lg text-sm font-medium transition ${activeTab === 'products' ? 'bg-black text-white' : 'text-gray-600 hover:bg-gray-100'}`}>
                         <ShoppingBag className="w-5 h-5 mr-3" /> Products
                     </button>
-                    <button onClick={() => setActiveTab('orders')} className={`flex items-center w-full px-4 py-3 rounded-lg text-sm font-medium transition ${activeTab === 'orders' ? 'bg-black text-white' : 'text-gray-600 hover:bg-gray-100'}`}>
+                    <button onClick={() => { setActiveTab('orders'); setIsSidebarOpen(false); }} className={`flex items-center w-full px-4 py-3 rounded-lg text-sm font-medium transition ${activeTab === 'orders' ? 'bg-black text-white' : 'text-gray-600 hover:bg-gray-100'}`}>
                         <Package className="w-5 h-5 mr-3" /> Orders
                     </button>
-                    <button onClick={() => setActiveTab('users')} className={`flex items-center w-full px-4 py-3 rounded-lg text-sm font-medium transition ${activeTab === 'users' ? 'bg-black text-white' : 'text-gray-600 hover:bg-gray-100'}`}>
+                    <button onClick={() => { setActiveTab('users'); setIsSidebarOpen(false); }} className={`flex items-center w-full px-4 py-3 rounded-lg text-sm font-medium transition ${activeTab === 'users' ? 'bg-black text-white' : 'text-gray-600 hover:bg-gray-100'}`}>
                         <Users className="w-5 h-5 mr-3" /> Users
                     </button>
-                    <button onClick={() => setActiveTab('messages')} className={`flex items-center w-full px-4 py-3 rounded-lg text-sm font-medium transition ${activeTab === 'messages' ? 'bg-black text-white' : 'text-gray-600 hover:bg-gray-100'}`}>
+                    <button onClick={() => { setActiveTab('messages'); setIsSidebarOpen(false); }} className={`flex items-center w-full px-4 py-3 rounded-lg text-sm font-medium transition ${activeTab === 'messages' ? 'bg-black text-white' : 'text-gray-600 hover:bg-gray-100'}`}>
                         <Mail className="w-5 h-5 mr-3" /> Messages
                     </button>
                     <button onClick={logout} className="flex items-center w-full px-4 py-3 rounded-lg text-sm font-medium text-red-600 hover:bg-red-50 mt-8">
@@ -322,10 +327,23 @@ const AdminDashboard = () => {
                 </nav>
             </aside>
 
+            {/* Overlay for mobile sidebar */}
+            {isSidebarOpen && (
+                <div
+                    className="fixed inset-0 bg-black/50 z-40 md:hidden"
+                    onClick={() => setIsSidebarOpen(false)}
+                />
+            )}
+
             {/* Main Content */}
             <div className="flex-1 p-8 overflow-y-auto">
                 <div className="md:hidden mb-8 flex justify-between items-center">
-                    <h1 className="text-xl font-bold">Admin Panel</h1>
+                    <div className="flex items-center gap-3">
+                        <button onClick={() => setIsSidebarOpen(true)} className="p-2 -ml-2">
+                            <Menu className="w-6 h-6" />
+                        </button>
+                        <h1 className="text-xl font-bold">Admin Panel</h1>
+                    </div>
                     <button onClick={logout} className="text-red-500">Logout</button>
                 </div>
 

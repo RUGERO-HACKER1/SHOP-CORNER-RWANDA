@@ -1,4 +1,4 @@
-import { Search, ShoppingBag, Heart, User, LogOut, LayoutDashboard, Globe, MessageCircle, Package } from 'lucide-react';
+import { Search, ShoppingBag, Heart, User, LogOut, LayoutDashboard, Globe, MessageCircle, Package, Menu, X } from 'lucide-react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { useCart } from '../context/CartContext';
@@ -11,6 +11,7 @@ const Navbar = () => {
     const { wishlist } = useWishlist();
     const navigate = useNavigate();
     const [showUserMenu, setShowUserMenu] = useState(false);
+    const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
     const [searchQuery, setSearchQuery] = useState('');
 
     const handleSearch = () => {
@@ -44,7 +45,15 @@ const Navbar = () => {
             </div>
 
             {/* Row 2: Main Header */}
-            <div className="container mx-auto px-4 py-4 flex items-center justify-between gap-8 h-20">
+            <div className="container mx-auto px-4 py-4 flex items-center justify-between gap-4 md:gap-8 h-20">
+                {/* Mobile Menu Button */}
+                <button
+                    className="md:hidden text-black p-2"
+                    onClick={() => setIsMobileMenuOpen(true)}
+                >
+                    <Menu className="w-6 h-6" />
+                </button>
+
                 <Link to="/" className="flex items-center gap-3 flex-shrink-0 group no-underline">
                     <img src="/logo-icon.png" alt="Shop Corner Rwanda" className="h-14 w-auto object-contain transition-transform group-hover:scale-105" />
                     <div className="flex flex-col items-start leading-none pointer-events-none">
@@ -77,8 +86,8 @@ const Navbar = () => {
 
                 {/* Icons */}
                 <div className="flex items-center space-x-6 text-black">
-                    {/* User */}
-                    <div className="relative group">
+                    {/* User - Hidden on Mobile, moved to Drawer */}
+                    <div className="relative group hidden md:block">
                         {user ? (
                             <div className="relative">
                                 <button
@@ -132,8 +141,8 @@ const Navbar = () => {
                         )}
                     </div>
 
-                    {/* Wishlist */}
-                    <Link to="/wishlist" className="relative hover:text-gray-600 transition">
+                    {/* Wishlist - Hidden on Mobile, moved to Drawer */}
+                    <Link to="/wishlist" className="relative hover:text-gray-600 transition hidden md:block">
                         <Heart className="h-6 w-6 stroke-1" />
                         {wishlist.length > 0 && (
                             <span className="absolute -top-1 -right-1 bg-red-500 text-white text-[10px] w-4 h-4 flex items-center justify-center rounded-full">
@@ -167,7 +176,92 @@ const Navbar = () => {
                     <Link to="/products" className="hover:text-gray-600 flex-shrink-0">Home & Pets</Link>
                 </div>
             </div>
-        </nav>
+
+
+            {/* Mobile Menu Overlay */}
+            {
+                isMobileMenuOpen && (
+                    <div className="fixed inset-0 z-[60] bg-black/50 md:hidden">
+                        <div className="fixed inset-y-0 left-0 w-4/5 max-w-sm bg-white shadow-xl flex flex-col h-full animate-slide-in-left">
+                            {/* Header */}
+                            <div className="flex justify-between items-center p-4 border-b">
+                                <span className="font-bold text-lg">Menu</span>
+                                <button onClick={() => setIsMobileMenuOpen(false)} className="p-2">
+                                    <X className="w-6 h-6" />
+                                </button>
+                            </div>
+
+                            {/* Search Mobile */}
+                            <div className="p-4 border-b">
+                                <div className="relative">
+                                    <input
+                                        type="text"
+                                        placeholder="Search..."
+                                        className="w-full border p-2 pl-3 pr-10 rounded text-sm bg-gray-50 focus:outline-none focus:border-black"
+                                        value={searchQuery}
+                                        onChange={(e) => setSearchQuery(e.target.value)}
+                                        onKeyDown={(e) => {
+                                            if (e.key === 'Enter') {
+                                                handleSearch();
+                                                setIsMobileMenuOpen(false);
+                                            }
+                                        }}
+                                    />
+                                    <button
+                                        onClick={() => {
+                                            handleSearch();
+                                            setIsMobileMenuOpen(false);
+                                        }}
+                                        className="absolute right-0 top-0 h-full px-3 text-gray-500"
+                                    >
+                                        <Search className="w-4 h-4" />
+                                    </button>
+                                </div>
+                            </div>
+
+                            {/* Navigation Links */}
+                            <div className="flex-1 overflow-y-auto py-2">
+                                <div className="space-y-1">
+                                    <Link to="/products" onClick={() => setIsMobileMenuOpen(false)} className="block px-6 py-3 hover:bg-gray-50 font-medium">New In</Link>
+                                    <Link to="/products" onClick={() => setIsMobileMenuOpen(false)} className="block px-6 py-3 hover:bg-gray-50 font-medium text-red-500">Sale</Link>
+                                    <Link to="/products" onClick={() => setIsMobileMenuOpen(false)} className="block px-6 py-3 hover:bg-gray-50 font-medium">Clothing</Link>
+                                    <Link to="/products" onClick={() => setIsMobileMenuOpen(false)} className="block px-6 py-3 hover:bg-gray-50 font-medium">Shoes</Link>
+                                    <Link to="/products" onClick={() => setIsMobileMenuOpen(false)} className="block px-6 py-3 hover:bg-gray-50 font-medium">Home & Living</Link>
+                                    <Link to="/products" onClick={() => setIsMobileMenuOpen(false)} className="block px-6 py-3 hover:bg-gray-50 font-medium">Home & Living</Link>
+                                </div>
+
+                                <div className="border-t my-2 pt-2 space-y-1">
+                                    {/* Mobile Wishlist & Cart Links */}
+                                    <Link to="/wishlist" onClick={() => setIsMobileMenuOpen(false)} className="flex items-center px-6 py-3 hover:bg-gray-50 font-medium text-gray-700">
+                                        <Heart className="w-5 h-5 mr-3" /> Wishlist
+                                        {wishlist.length > 0 && <span className="ml-auto bg-red-500 text-white text-xs px-2 py-0.5 rounded-full">{wishlist.length}</span>}
+                                    </Link>
+                                    <Link to="/cart" onClick={() => setIsMobileMenuOpen(false)} className="flex items-center px-6 py-3 hover:bg-gray-50 font-medium text-gray-700">
+                                        <ShoppingBag className="w-5 h-5 mr-3" /> Cart
+                                        {cartCount > 0 && <span className="ml-auto bg-black text-white text-xs px-2 py-0.5 rounded-full">{cartCount}</span>}
+                                    </Link>
+                                </div>
+
+                                <div className="border-t my-2 pt-2">
+                                    {user ? (
+                                        <>
+                                            <div className="px-6 py-2 text-sm text-gray-400 font-bold uppercase tracking-wider">Account</div>
+                                            <Link to="/profile" onClick={() => setIsMobileMenuOpen(false)} className="block px-6 py-3 hover:bg-gray-50">My Profile</Link>
+                                            <Link to="/orders" onClick={() => setIsMobileMenuOpen(false)} className="block px-6 py-3 hover:bg-gray-50">My Orders</Link>
+                                            <button onClick={handleLogout} className="block w-full text-left px-6 py-3 text-red-600 hover:bg-gray-50">Logout</button>
+                                        </>
+                                    ) : (
+                                        <div className="p-4">
+                                            <Link to="/login" onClick={() => setIsMobileMenuOpen(false)} className="block w-full text-center bg-black text-white py-3 rounded font-bold">Sign In / Register</Link>
+                                        </div>
+                                    )}
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                )
+            }
+        </nav >
     );
 };
 

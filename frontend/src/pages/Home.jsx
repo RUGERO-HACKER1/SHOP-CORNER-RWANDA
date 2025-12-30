@@ -98,11 +98,11 @@ const Home = () => {
             <div className={`w-full ${slides[currentSlide].bg} mb-6 transition-colors duration-300 ease-in-out`}>
                 <div className="container mx-auto px-0 md:px-4 flex flex-col md:flex-row h-auto md:h-[450px]">
                     {/* Left Banner (Slider) */}
-                    <div className="w-full md:w-1/3 h-64 md:h-full relative flex items-center justify-center overflow-hidden transition-all duration-300">
+                    <div className="w-full md:w-1/3 h-80 md:h-full relative flex items-center justify-center overflow-hidden transition-all duration-300">
                         <div className={`absolute inset-0 bg-gradient-to-br ${slides[currentSlide].accent} opacity-50`}></div>
                         <div className="relative z-10 text-center p-8 transition-opacity duration-300 animate-fade-in-up">
-                            <div className="text-white text-4xl font-black italic tracking-tighter mb-2 drop-shadow-md">{slides[currentSlide].subtitle}</div>
-                            <div className="text-white text-2xl font-bold mb-4 drop-shadow-md">{slides[currentSlide].title}</div>
+                            <div className="text-white text-3xl md:text-4xl font-black italic tracking-tighter mb-2 drop-shadow-md">{slides[currentSlide].subtitle}</div>
+                            <div className="text-white text-xl md:text-2xl font-bold mb-4 drop-shadow-md">{slides[currentSlide].title}</div>
                             <button className="bg-white/20 backdrop-blur-md text-white border-2 border-white rounded-full p-2 hover:bg-white hover:text-purple-600 transition">
                                 <ChevronRight className="w-6 h-6" />
                             </button>
@@ -141,13 +141,13 @@ const Home = () => {
 
             <div className="container mx-auto px-4 mt-8">
                 {/* CATEGORY CIRCLES - Expanded Grid */}
-                <div className="grid grid-cols-4 md:grid-cols-6 lg:grid-cols-8 gap-4 mb-10">
+                <div className="grid grid-cols-4 md:grid-cols-6 lg:grid-cols-8 gap-3 md:gap-4 mb-10">
                     {categories.map((cat) => (
                         <Link to={`/products?category=${cat.name}`} key={cat.name} className="flex flex-col items-center group">
-                            <div className="w-20 h-20 rounded-full overflow-hidden mb-2 border hover:border-black transition">
+                            <div className="w-16 h-16 md:w-20 md:h-20 rounded-full overflow-hidden mb-2 border hover:border-black transition">
                                 <img src={cat.img} alt={cat.name} className="w-full h-full object-cover group-hover:scale-110 transition duration-300" />
                             </div>
-                            <span className="text-sm font-medium text-gray-800 group-hover:font-bold">{cat.name}</span>
+                            <span className="text-xs md:text-sm font-medium text-gray-800 group-hover:font-bold">{cat.name}</span>
                         </Link>
                     ))}
                 </div>
@@ -155,9 +155,9 @@ const Home = () => {
                 {/* FLASH SALE / SUPER DEALS SECTION */}
                 <div className="bg-white p-6 rounded-lg shadow-sm mb-8">
                     <div className="flex justify-between items-center mb-6">
-                        <div className="flex items-center gap-4">
-                            <h2 className="text-2xl font-black italic">Super<span className="text-shein-red">Deals</span></h2>
-                            <div className="flex items-center gap-1 bg-black text-white px-3 py-1 rounded text-xs font-bold">
+                        <div className="flex items-center gap-2 md:gap-4">
+                            <h2 className="text-xl md:text-2xl font-black italic">Super<span className="text-shein-red">Deals</span></h2>
+                            <div className="flex items-center gap-1 bg-black text-white px-2 py-1 md:px-3 rounded text-[10px] md:text-xs font-bold">
                                 <span>02</span>:<span>14</span>:<span>55</span>
                             </div>
                         </div>
