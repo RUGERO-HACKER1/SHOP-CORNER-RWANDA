@@ -2,20 +2,110 @@
 @tailwind components;
 @tailwind utilities;
 
-body {
-    font-family: 'Inter', sans-serif;
-    background-color: #ffffff;
-    color: #222222;
+@layer base {
+    body {
+        @apply bg-[#fcfcfc] text-[#1a1a1a] dark:bg-[#0a0a0a] dark:text-[#f2f2f2] antialiased transition-colors duration-300;
+        font-family: 'Outfit', 'Inter', sans-serif;
+    }
 }
 
 .text-shein-red {
-    color: #fa6338;
+    color: #ff4d4d;
 }
 
 .bg-shein-red {
-    background-color: #fa6338;
+    background-color: #ff4d4d;
 }
 
-.text-shein-black {
-    color: #222222;
+@keyframes fade-in-up {
+    from {
+        opacity: 0;
+        transform: translateY(20px);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+@keyframes slide-in-left {
+    from {
+        transform: translateX(-100%);
+    }
+
+    to {
+        transform: translateX(0);
+    }
+}
+
+@keyframes slide-in-right {
+    from {
+        transform: translateX(100%);
+    }
+
+    to {
+        transform: translateX(0);
+    }
+}
+
+@keyframes fade-in {
+    from {
+        opacity: 0;
+    }
+
+    to {
+        opacity: 1;
+    }
+}
+
+@keyframes slide-up {
+    from {
+        transform: translateY(100%);
+    }
+
+    to {
+        transform: translateY(0);
+    }
+}
+
+.animate-fade-in-up {
+    animation: fade-in-up 0.6s ease-out forwards;
+}
+
+.animate-fade-in {
+    animation: fade-in 0.4s ease-out forwards;
+}
+
+.animate-slide-up {
+    animation: slide-up 0.4s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+.animate-slide-in-left {
+    animation: slide-in-left 0.4s ease-out forwards;
+}
+
+.animate-slide-in-right {
+    animation: slide-in-right 0.6s ease-out forwards;
+}
+
+.no-scrollbar::-webkit-scrollbar {
+    display: none;
+}
+
+.no-scrollbar {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+}
+
+/* Glassmorphism utility */
+.glass {
+    background: rgba(255, 255, 255, 0.7);
+    backdrop-filter: blur(10px);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+}
+
+.dark .glass {
+    background: rgba(18, 18, 18, 0.7);
+    border-color: rgba(255, 255, 255, 0.05);
 }

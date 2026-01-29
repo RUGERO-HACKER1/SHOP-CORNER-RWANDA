@@ -4,65 +4,74 @@ import { Link } from 'react-router-dom'; // Added import
 
 const Footer = () => {
     return (
-        <footer className="bg-gray-50 pt-16 pb-8 border-t border-gray-100">
+        <footer className="bg-[#1a1a1a] dark:bg-black text-white pt-20 pb-10 mt-20 transition-colors">
             <div className="container mx-auto px-4">
-                <div className="grid grid-cols-1 md:grid-cols-4 gap-8 mb-12">
+                <div className="grid grid-cols-1 md:grid-cols-4 gap-12 mb-16">
                     {/* Company Info */}
                     <div>
-                        <h3 className="font-bold text-lg mb-4">Company Info</h3>
-                        <ul className="space-y-2 text-gray-600 text-sm">
-                            <li><Link to="/about" className="hover:text-black">About Shop Corner</Link></li>
-                            <li><a href="#" className="hover:text-black">Social Responsibility</a></li>
-                            <li><a href="#" className="hover:text-black">Careers</a></li>
-                            <li><a href="#" className="hover:text-black">Supply Chain</a></li>
+                        <h3 className="font-black uppercase tracking-widest text-sm mb-8 text-white/50">Company Info</h3>
+                        <ul className="space-y-4 text-gray-400 text-sm">
+                            <li><Link to="/about" className="hover:text-white transition-colors">About Shop Corner</Link></li>
+                            <li><a href="#" className="hover:text-white transition-colors">Social Responsibility</a></li>
+                            <li><a href="#" className="hover:text-white transition-colors">Careers</a></li>
+                            <li><a href="#" className="hover:text-white transition-colors">Supply Chain</a></li>
                         </ul>
                     </div>
 
                     {/* Help & Support */}
                     <div>
-                        <h3 className="font-bold text-lg mb-4">Help & Support</h3>
-                        <ul className="space-y-2 text-gray-600 text-sm">
-                            <li><a href="#" className="hover:text-black">Shipping Info</a></li>
-                            <li><Link to="/returns" className="hover:text-black">Returns</Link></li>
-                            <li><a href="#" className="hover:text-black">How to Order</a></li>
-                            <li><a href="#" className="hover:text-black">Size Guide</a></li>
+                        <h3 className="font-black uppercase tracking-widest text-sm mb-8 text-white/50">Help & Support</h3>
+                        <ul className="space-y-4 text-gray-400 text-sm">
+                            <li><a href="#" className="hover:text-white transition-colors">Shipping Info</a></li>
+                            <li><Link to="/returns" className="hover:text-white transition-colors">Returns</Link></li>
+                            <li><a href="#" className="hover:text-white transition-colors">How to Order</a></li>
+                            <li><a href="#" className="hover:text-white transition-colors">Size Guide</a></li>
                         </ul>
                     </div>
 
                     {/* Customer Care */}
                     <div>
-                        <h3 className="font-bold text-lg mb-4">Customer Care</h3>
-                        <ul className="space-y-2 text-gray-600 text-sm">
-                            <li><Link to="/contact" className="hover:text-black">Contact Us</Link></li>
-                            <li><a href="#" className="hover:text-black">Payment Methods</a></li>
-                            <li><a href="#" className="hover:text-black">Bonus Point</a></li>
+                        <h3 className="font-black uppercase tracking-widest text-sm mb-8 text-white/50">Customer Care</h3>
+                        <ul className="space-y-4 text-gray-400 text-sm">
+                            <li><Link to="/contact" className="hover:text-white transition-colors">Contact Us</Link></li>
+                            <li><a href="#" className="hover:text-white transition-colors">Payment Methods</a></li>
+                            <li><a href="#" className="hover:text-white transition-colors">Bonus Point</a></li>
                         </ul>
                     </div>
 
                     {/* Connect */}
                     <div>
-                        <h3 className="font-bold text-lg mb-4">Connect With Us</h3>
-                        <div className="flex space-x-4 mb-6">
-                            <a href="#" className="text-gray-400 hover:text-black"><Facebook className="w-5 h-5" /></a>
-                            <a href="#" className="text-gray-400 hover:text-black"><Instagram className="w-5 h-5" /></a>
-                            <a href="#" className="text-gray-400 hover:text-black"><Twitter className="w-5 h-5" /></a>
-                            <a href="#" className="text-gray-400 hover:text-black"><Youtube className="w-5 h-5" /></a>
+                        <h3 className="font-black uppercase tracking-widest text-sm mb-8 text-white/50">Join Our World</h3>
+                        <div className="flex space-x-6 mb-8">
+                            <a href="#" className="text-white/40 hover:text-white transition-transform hover:-translate-y-1"><Facebook className="w-5 h-5" /></a>
+                            <a href="#" className="text-white/40 hover:text-white transition-transform hover:-translate-y-1"><Instagram className="w-5 h-5" /></a>
+                            <a href="#" className="text-white/40 hover:text-white transition-transform hover:-translate-y-1"><Twitter className="w-5 h-5" /></a>
+                            <a href="#" className="text-white/40 hover:text-white transition-transform hover:-translate-y-1"><Youtube className="w-5 h-5" /></a>
                         </div>
-                        <p className="text-gray-500 text-xs">
-                            Sign up for our newsletter to get updates on new arrivals and sales.
-                        </p>
+                        <div className="relative">
+                            <input type="email" placeholder="Email Address" className="w-full bg-white/5 border border-white/10 rounded-full py-3 px-6 text-sm focus:outline-none focus:ring-1 focus:ring-white/30" />
+                            <button className="absolute right-2 top-1/2 -translate-y-1/2 bg-white text-black text-[10px] font-black uppercase px-4 py-2 rounded-full hover:bg-shein-red hover:text-white transition-colors">Join</button>
+                        </div>
                     </div>
                 </div>
 
-                <div className="border-t border-gray-200 pt-8 flex flex-col md:flex-row justify-between items-center">
-                    <p className="text-gray-400 text-xs mb-4 md:mb-0">
-                        © 2024 Shop Corner Rwanda. All Rights Reserved.
-                    </p>
-                    <div className="flex space-x-4">
-                        {/* Payment Icons placehoder */}
-                        <div className="h-6 w-10 bg-gray-200 rounded"></div>
-                        <div className="h-6 w-10 bg-gray-200 rounded"></div>
-                        <div className="h-6 w-10 bg-gray-200 rounded"></div>
+                <div className="border-t border-white/5 pt-10 flex flex-col md:flex-row justify-between items-center">
+                    <div className="flex flex-col items-center md:items-start mb-6 md:mb-0">
+                        <div className="flex flex-col items-center md:items-start mb-4">
+                            <img src="/shop-corner-final-logo.png" alt="Shop Corner" className="w-16 h-16 object-cover mb-3 rounded-lg shadow-sm" />
+                            <div className="flex flex-col">
+                                <span className="text-xl font-black tracking-tighter uppercase whitespace-nowrap">SHOP<span className="text-shein-red">CORNER</span></span>
+                                <span className="text-[10px] font-black tracking-[0.3em] text-shein-red">RWANDA</span>
+                            </div>
+                        </div>
+                        <p className="text-white/30 text-[10px] uppercase tracking-widest">
+                            © 2026 Shop Corner Rwanda. All Rights Reserved.
+                        </p>
+                    </div>
+                    <div className="flex space-x-6 items-center opacity-30 grayscale hover:grayscale-0 hover:opacity-100 transition-all duration-500 cursor-pointer">
+                        <img src="https://upload.wikimedia.org/wikipedia/commons/5/5e/Visa_Inc._logo.svg" className="h-4" />
+                        <img src="https://upload.wikimedia.org/wikipedia/commons/2/2a/Mastercard-logo.svg" className="h-6" />
+                        <img src="https://upload.wikimedia.org/wikipedia/commons/b/b5/PayPal.svg" className="h-4" />
                     </div>
                 </div>
             </div>

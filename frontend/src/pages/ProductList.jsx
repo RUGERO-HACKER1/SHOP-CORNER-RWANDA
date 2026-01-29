@@ -25,7 +25,7 @@ const ProductList = () => {
     }, [categoryQuery]);
 
     useEffect(() => {
-        fetch('http://localhost:5000/api/products')
+        fetch(`${API_URL}/api/products`)
             .then(res => res.json())
             .then(data => {
                 setProducts(data);
@@ -96,36 +96,36 @@ const ProductList = () => {
             <div className="flex flex-col md:flex-row gap-8">
                 {/* Sidebar Filters */}
                 <aside className="w-full md:w-64 flex-shrink-0">
-                    <div className="sticky top-20 space-y-8">
-                        <div>
-                            <h3 className="font-bold mb-4">Categories</h3>
-                            <ul className="space-y-2 text-sm text-gray-600">
-                                {['Dresses', 'Tops', 'Bottoms', 'Accessories', 'Outerwear'].map(cat => (
+                    <div className="sticky top-24 space-y-10">
+                        <div className="bg-white dark:bg-[#1a1a1a] p-6 rounded-2xl shadow-sm border border-gray-100 dark:border-white/5 transition-colors">
+                            <h3 className="font-black uppercase tracking-widest text-xs mb-6 text-gray-400 dark:text-gray-500">Categories</h3>
+                            <ul className="space-y-3 text-sm">
+                                {['Dresses', 'Tops', 'Bottoms', 'Accessories', 'Outerwear', 'Shoes', 'Bags'].map(cat => (
                                     <li key={cat}>
-                                        <label className="flex items-center space-x-2 cursor-pointer">
+                                        <label className="flex items-center group cursor-pointer">
                                             <input
                                                 type="checkbox"
                                                 checked={filters.categories.includes(cat)}
                                                 onChange={() => handleCategoryChange(cat)}
-                                                className="rounded text-black focus:ring-black"
+                                                className="w-4 h-4 rounded border-gray-300 dark:border-white/10 text-black dark:text-shein-red focus:ring-black dark:focus:ring-shein-red bg-white dark:bg-black/20"
                                             />
-                                            <span>{cat}</span>
+                                            <span className="ml-3 text-gray-600 dark:text-gray-400 group-hover:text-black dark:group-hover:text-white transition-colors">{cat}</span>
                                         </label>
                                     </li>
                                 ))}
                             </ul>
                         </div>
 
-                        <div>
-                            <h3 className="font-bold mb-4">Size</h3>
-                            <div className="flex flex-wrap gap-2">
+                        <div className="bg-white dark:bg-[#1a1a1a] p-6 rounded-2xl shadow-sm border border-gray-100 dark:border-white/5 transition-colors">
+                            <h3 className="font-black uppercase tracking-widest text-xs mb-6 text-gray-400 dark:text-gray-500">Size</h3>
+                            <div className="grid grid-cols-3 gap-2">
                                 {['XS', 'S', 'M', 'L', 'XL'].map(size => (
                                     <button
                                         key={size}
                                         onClick={() => handleSizeChange(size)}
-                                        className={`w-8 h-8 border rounded transition text-xs ${filters.sizes.includes(size)
-                                            ? 'bg-black text-white border-black'
-                                            : 'hover:bg-black hover:text-white'
+                                        className={`py-2 border rounded-lg transition-all text-[10px] font-bold ${filters.sizes.includes(size)
+                                            ? 'bg-black dark:bg-shein-red text-white border-black dark:border-shein-red shadow-md'
+                                            : 'bg-gray-50 dark:bg-black/20 border-transparent dark:border-white/5 hover:border-black dark:hover:border-white text-gray-500 dark:text-gray-400 hover:text-black dark:hover:text-white'
                                             }`}
                                     >
                                         {size}
@@ -134,18 +134,22 @@ const ProductList = () => {
                             </div>
                         </div>
 
-                        <div>
-                            <h3 className="font-bold mb-4">Max Price: ${filters.priceRange}</h3>
+                        <div className="bg-white dark:bg-[#1a1a1a] p-6 rounded-2xl shadow-sm border border-gray-100 dark:border-white/5 transition-colors">
+                            <div className="flex justify-between items-center mb-6">
+                                <h3 className="font-black uppercase tracking-widest text-xs text-gray-400 dark:text-gray-500">Price</h3>
+                                <span className="text-xs font-bold dark:text-white">{filters.priceRange.toLocaleString()} RWF</span>
+                            </div>
                             <input
                                 type="range"
-                                min="0" max="200"
+                                min="0" max="100000"
+                                step="1000"
                                 value={filters.priceRange}
                                 onChange={(e) => setFilters({ ...filters, priceRange: Number(e.target.value) })}
-                                className="w-full h-1 bg-gray-200 rounded-lg appearance-none cursor-pointer accent-black"
+                                className="w-full h-1.5 bg-gray-100 dark:bg-white/10 rounded-lg appearance-none cursor-pointer accent-black dark:accent-shein-red"
                             />
-                            <div className="flex justify-between text-xs mt-2">
-                                <span>$0</span>
-                                <span>$200</span>
+                            <div className="flex justify-between text-[10px] font-bold text-gray-400 dark:text-gray-500 mt-3 uppercase tracking-tighter">
+                                <span>0 RWF</span>
+                                <span>100,000 RWF</span>
                             </div>
                         </div>
                     </div>
@@ -154,11 +158,11 @@ const ProductList = () => {
                 {/* Product Grid */}
                 <div className="flex-1">
                     <div className="flex justify-between items-center mb-6">
-                        <h1 className="text-xl font-bold">Clothing ({filteredProducts.length})</h1>
+                        <h1 className="text-xl font-bold dark:text-white">Clothing ({filteredProducts.length})</h1>
                         <select
                             value={sort}
                             onChange={(e) => setSort(e.target.value)}
-                            className="border rounded p-2 text-sm focus:outline-none focus:ring-1 focus:ring-black"
+                            className="border dark:border-white/10 bg-white dark:bg-[#1a1a1a] dark:text-white rounded p-2 text-sm focus:outline-none focus:ring-1 focus:ring-black dark:focus:ring-white transition-colors"
                         >
                             <option value="recommended">Sort by: Recommended</option>
                             <option value="price-low">Price Low to High</option>

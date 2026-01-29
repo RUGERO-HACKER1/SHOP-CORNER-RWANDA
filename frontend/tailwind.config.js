@@ -10,8 +10,10 @@ export default {
                 primary: '#000000',
                 secondary: '#ffffff',
                 accent: '#ff4081',
+                'shein-red': '#ff0000',
             }
         },
     },
+    darkMode: 'class',
     plugins: [],
 }

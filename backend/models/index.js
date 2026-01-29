@@ -6,12 +6,12 @@ const sequelize = process.env.DATABASE_URL
     ? new Sequelize(process.env.DATABASE_URL, {
         dialect: 'postgres',
         logging: false,
-        dialectOptions: {
+        dialectOptions: process.env.NODE_ENV === 'production' ? {
             ssl: {
                 require: true,
                 rejectUnauthorized: false
             }
-        }
+        } : {}
     })
     : new Sequelize(
         process.env.DB_NAME,
@@ -39,13 +39,16 @@ const Product = sequelize.define('Product', {
     originalPrice: { type: DataTypes.DECIMAL(10, 2) },
     image: { type: DataTypes.STRING },
     category: { type: DataTypes.STRING },
-    sizes: { type: DataTypes.ARRAY(DataTypes.STRING) }
+    sizes: { type: DataTypes.ARRAY(DataTypes.STRING) },
+    stockQuantity: { type: DataTypes.INTEGER, defaultValue: 0 },
+    variants: { type: DataTypes.JSONB, defaultValue: [] } // [{size, color, stock}]
 });
 
 const Order = sequelize.define('Order', {
     totalAmount: { type: DataTypes.DECIMAL(10, 2), allowNull: false },
     status: { type: DataTypes.STRING, defaultValue: 'Pending' },
-    shippingAddress: { type: DataTypes.JSONB }
+    shippingAddress: { type: DataTypes.JSONB },
+    trackingInfo: { type: DataTypes.JSONB, defaultValue: [] } // [{status, time, message}]
 });
 
 // Relations

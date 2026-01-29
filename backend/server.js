@@ -6,18 +6,44 @@ const db = require('./models');
 dotenv.config();
 
 const app = express();
+const http = require('http');
+// const { Server } = require('socket.io');
+const server = http.createServer(app);
+/* const io = new Server(server, {
+    cors: {
+        origin: "*",
+        methods: ["GET", "POST", "PUT"]
+    }
+}); */
+
 const PORT = process.env.PORT || 5000;
+
+// Socket.io connection
+/* io.on('connection', (socket) => {
+    console.log('A user connected:', socket.id);
+
+    socket.on('join', (userId) => {
+        socket.join(userId);
+        console.log(`User ${userId} joined their room`);
+    });
+
+    socket.on('disconnect', () => {
+        console.log('User disconnected');
+    });
+}); */
 
 // Middleware
 app.use(cors());
 app.use(express.json());
 
-// Test DB Connection
+// Pass io to routes
+// app.set('io', io);
+
 // Sync DB and Start Server
 db.sequelize.sync({ alter: true })
     .then(() => {
         console.log('Database synced...');
-        app.listen(PORT, () => console.log(`Server running on port ${PORT}`));
+        server.listen(PORT, () => console.log(`Server running on port ${PORT}`));
     })
     .catch(err => console.log('Error syncing DB: ' + err));
 
@@ -27,6 +53,7 @@ app.use('/api/products', require('./routes/product.routes'));
 app.use('/api/orders', require('./routes/order.routes'));
 app.use('/api/reviews', require('./routes/review.routes'));
 app.use('/api/contact', require('./routes/contact.routes'));
+app.use('/api/payments', require('./routes/payment.routes'));
 
 // Test Route
 app.get('/', (req, res) => res.send('API Running'));
