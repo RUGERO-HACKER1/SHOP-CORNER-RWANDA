@@ -142,8 +142,19 @@ const seed = async () => {
             });
         });
 
-        await db.Product.bulkCreate(products);
-        console.log(`${products.length} Products seeded successfully.`);
+        // SMART SEED: Loop and ensure each product exists (Idempotent)
+        console.log(`Checking/Seeding ${products.length} products...`);
+
+        let addedCount = 0;
+        for (const p of products) {
+            const [product, created] = await db.Product.findOrCreate({
+                where: { image: p.image }, // Check by unique image filename to avoid dupes
+                defaults: p
+            });
+            if (created) addedCount++;
+        }
+
+        console.log(`Seeding complete. Added ${addedCount} new products. Total should be ${products.length}.`);
     } catch (err) {
         console.error('Seeding error:', err);
     }
