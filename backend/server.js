@@ -41,8 +41,17 @@ app.use(express.json());
 
 // Sync DB and Start Server
 db.sequelize.sync({ alter: true })
-    .then(() => {
+    .then(async () => {
         console.log('Database synced...');
+
+        // Auto-seed if needed
+        try {
+            const seed = require('./seed');
+            await seed();
+        } catch (err) {
+            console.error('Auto-seed failed:', err);
+        }
+
         server.listen(PORT, () => console.log(`Server running on port ${PORT}`));
     })
     .catch(err => console.log('Error syncing DB: ' + err));
