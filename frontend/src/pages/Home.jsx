@@ -35,7 +35,7 @@ const Home = () => {
         { name: 'Home', img: '/products/1688_image_share_1688_image_share_0640a7086ecfb46bef6070992e12f32a.jpg.jpeg' },
     ];
 
-    const slides = [
+    const [heroSlides, setHeroSlides] = useState([
         {
             title: "#SummerVibes",
             subtitle: "Season 2026",
@@ -43,45 +43,78 @@ const Home = () => {
             img: "/products/1688_image_share_3b04ad8a2ffd638d432292fb58b6b481.jpg.jpeg",
             accent: "from-orange-100 to-rose-200",
             products: [
-                { img: "/products/1688_image_share_42b89e05b94646e2b8d09ad2df4d8169.jpg.jpeg", price: "45,000 RWF", label: "Boho Dress" },
-                { img: "/products/1688_image_share_0640a7086ecfb46bef6070992e12f32a.jpg.jpeg", price: "29,000 RWF", label: "Linen Top", highlight: true },
-                { img: "/products/1688_image_share_106e1631e02d6e9b50eed28f374e79d7.jpg.jpeg", price: "60,000 RWF", label: "Designer Bag" },
-            ]
-        },
-        {
-            title: "Night Out",
-            subtitle: "Trending Now",
-            bg: "bg-[#E2E8F0]",
-            img: "/products/1688_image_share_73e9c606f8fc0dcc1d2c750215cacc19.jpg.jpeg",
-            accent: "from-slate-200 to-indigo-300",
-            products: [
-                { img: "/products/1688_image_share_2ab43c500b06fccdd56dcf110a974d86.jpg.jpeg", price: "89,000 RWF", label: "Evening Gown" },
-                { img: "/products/1688_image_share_3cc73f2c1b54d0e5823553608b03a2eb.jpg.jpeg", price: "55,000 RWF", label: "Stiletto Heels", highlight: true },
-                { img: "/products/1688_image_share_58303c8cdef2b16d9a6099f1fe9899c7.jpg.jpeg", price: "45,000 RWF", label: "Clutch" },
+                { img: "/products/1688_image_share_42b89e05b94646e2b8d09ad2df4d8169.jpg.jpeg", price: "45,000", label: "Boho Dress" },
+                { img: "/products/1688_image_share_0640a7086ecfb46bef6070992e12f32a.jpg.jpeg", price: "29,000", label: "Linen Top", highlight: true },
+                { img: "/products/1688_image_share_106e1631e02d6e9b50eed28f374e79d7.jpg.jpeg", price: "60,000", label: "Designer Bag" },
             ]
         }
-    ];
+    ]);
 
     const [currentSlide, setCurrentSlide] = useState(0);
 
     useEffect(() => {
+        if (heroSlides.length === 0) return;
         const timer = setInterval(() => {
-            setCurrentSlide((prev) => (prev + 1) % slides.length);
-        }, 1500);
+            setCurrentSlide((prev) => (prev + 1) % heroSlides.length);
+        }, 3000); // Slower for better UX
         return () => clearInterval(timer);
-    }, []);
+    }, [heroSlides]);
 
-    // Fetch Products for "New Arrivals" & "Trending"
+    // Fetch Products for "New Arrivals" & "Trending" & "Hero Slider"
     useEffect(() => {
         fetch(`${API_URL}/api/products`)
             .then(res => res.json())
             .then(data => {
-                // Inject Front/Back logic for grid demo
+                // 1. General Product List logic
                 const enhancedData = data.map((p, idx) => ({
                     ...p,
                     image: p.image.includes('placehold.co') ? `https://placehold.co/400x500/pink/white?text=Front+${idx + 1}` : p.image
                 }));
                 setFeaturedProducts(enhancedData);
+
+                // 2. Dynamic Hero Slider Logic (5 Discounted Products)
+                const discounted = enhancedData
+                    .filter(p => p.originalPrice > p.price)
+                    .sort((a, b) => (b.originalPrice - b.price) - (a.originalPrice - a.price)); // Sort by discount magnitude
+
+                const top5 = discounted.slice(0, 5);
+
+                if (top5.length > 0) {
+                    const newSlides = top5.map((p, i) => {
+                        // Pick 3 related/random products for the side grid
+                        const sideProducts = enhancedData
+                            .filter(ip => ip.id !== p.id)
+                            .sort(() => 0.5 - Math.random()) // Shuffle
+                            .slice(0, 3)
+                            .map(sp => ({
+                                img: sp.image,
+                                price: sp.price.toLocaleString() + ' RWF',
+                                label: sp.title,
+                                highlight: Math.random() > 0.5
+                            }));
+
+                        // Dynamic colors based on index
+                        const accents = [
+                            "from-orange-100 to-rose-200",
+                            "from-slate-200 to-indigo-300",
+                            "from-green-100 to-emerald-200",
+                            "from-blue-100 to-cyan-200",
+                            "from-purple-100 to-fuchsia-200"
+                        ];
+                        const bgs = ["bg-[#F5E6E0]", "bg-[#E2E8F0]", "bg-[#E6F5E6]", "bg-[#E0F2F5]", "bg-[#F3E0F5]"];
+
+                        return {
+                            title: p.title,
+                            subtitle: `Save ${Math.round(((p.originalPrice - p.price) / p.originalPrice) * 100)}% Today`,
+                            bg: bgs[i % bgs.length],
+                            img: p.image,
+                            accent: accents[i % accents.length],
+                            products: sideProducts
+                        };
+                    });
+                    setHeroSlides(newSlides);
+                    setCurrentSlide(0); // Reset to first slide
+                }
             })
             .catch(err => console.error('Error fetching products:', err));
     }, []);
@@ -91,27 +124,27 @@ const Home = () => {
 
 
             {/* HERO SECTION - Unified Slider */}
-            <div className={`w-full ${slides[currentSlide].bg} mb-6 transition-colors duration-300 ease-in-out`}>
+            <div className={`w-full ${heroSlides[currentSlide].bg} mb-6 transition-colors duration-300 ease-in-out`}>
                 <div className="container mx-auto px-0 md:px-4 flex flex-col md:flex-row h-auto md:h-[450px]">
                     {/* Left Banner (Slider) */}
                     <div className="w-full md:w-1/3 h-80 md:h-full relative flex items-center justify-center overflow-hidden transition-all duration-300">
-                        <div className={`absolute inset-0 bg-gradient-to-br ${slides[currentSlide].accent} opacity-50 dark:opacity-20`}></div>
+                        <div className={`absolute inset-0 bg-gradient-to-br ${heroSlides[currentSlide].accent} opacity-50 dark:opacity-20`}></div>
                         <div className="relative z-10 text-center p-8 transition-opacity duration-300 animate-fade-in-up">
-                            <div className="text-white text-3xl md:text-4xl font-black italic tracking-tighter mb-2 drop-shadow-md">{slides[currentSlide].subtitle}</div>
-                            <div className="text-white text-xl md:text-2xl font-bold mb-4 drop-shadow-md">{slides[currentSlide].title}</div>
+                            <div className="text-white text-3xl md:text-4xl font-black italic tracking-tighter mb-2 drop-shadow-md">{heroSlides[currentSlide].subtitle}</div>
+                            <div className="text-white text-xl md:text-2xl font-bold mb-4 drop-shadow-md">{heroSlides[currentSlide].title}</div>
                             <button className="bg-white/20 backdrop-blur-md text-white border-2 border-white rounded-full p-2 hover:bg-white dark:hover:bg-shein-red hover:text-purple-600 dark:hover:text-white transition">
                                 <ChevronRight className="w-6 h-6" />
                             </button>
                         </div>
                         <img
                             key={`hero-img-${currentSlide}`}
-                            src={slides[currentSlide].img}
+                            src={heroSlides[currentSlide].img}
                             className="absolute bottom-0 right-0 h-4/5 object-contain rotate-6 opacity-80 mix-blend-multiply animate-slide-in-right"
                         />
 
                         {/* Slide Dots - Mobile Only usually, but keeping here for interactions */}
                         <div className="absolute bottom-4 left-1/2 transform -translate-x-1/2 flex space-x-2 z-20">
-                            {slides.map((_, idx) => (
+                            {heroSlides.map((_, idx) => (
                                 <button
                                     key={idx}
                                     onClick={() => setCurrentSlide(idx)}
@@ -123,7 +156,7 @@ const Home = () => {
 
                     {/* Right Slider / Promo Area - Dynamic Content */}
                     <div className="w-full md:w-2/3 bg-white/50 dark:bg-black/20 backdrop-blur-sm h-auto md:h-full p-1 md:p-4 flex flex-row gap-1 md:gap-4 items-center overflow-hidden">
-                        {slides[currentSlide].products.map((prod, idx) => (
+                        {heroSlides[currentSlide].products.map((prod, idx) => (
                             <div key={`${currentSlide}-${idx}`} className="flex-1 min-w-0 h-[180px] xs:h-[220px] sm:h-[280px] md:h-[380px] bg-white dark:bg-[#1a1a1a] rounded-md relative overflow-hidden group cursor-pointer shadow-sm hover:shadow-md transition-all duration-300 animate-fade-in">
                                 <img src={prod.img} className="w-full h-full object-cover transition duration-500 group-hover:scale-110 opacity-100 dark:opacity-90" alt={prod.label} />
                                 <div className={`absolute bottom-1 left-1 md:bottom-4 md:left-4 bg-white/90 dark:bg-black/80 dark:text-white px-1.5 py-0.5 md:px-3 md:py-1 rounded-full text-[8px] xs:text-[10px] md:text-lg font-bold shadow-sm ${prod.highlight ? 'text-shein-red' : 'text-black'}`}>
