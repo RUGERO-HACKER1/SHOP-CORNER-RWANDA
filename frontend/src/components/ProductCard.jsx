@@ -3,7 +3,7 @@ import { Link } from 'react-router-dom';
 import { useCart } from '../context/CartContext';
 import { useWishlist } from '../context/WishlistContext';
 
-const ProductCard = ({ id, image, title, price, originalPrice }) => {
+const ProductCard = ({ id, image, title, price, originalPrice, showDiscount = true }) => {
     const { addToCart } = useCart();
     const { toggleWishlist, isInWishlist } = useWishlist();
     const isLiked = isInWishlist(id);
@@ -35,7 +35,7 @@ const ProductCard = ({ id, image, title, price, originalPrice }) => {
                     />
 
                     {/* Discount Badge */}
-                    {discountPercentage > 0 && (
+                    {showDiscount && discountPercentage > 0 && (
                         <div className="absolute top-2 left-0 bg-yellow-400 text-black text-xs font-bold px-2 py-0.5 z-10">
                             -{discountPercentage}%
                         </div>
@@ -68,10 +68,10 @@ const ProductCard = ({ id, image, title, price, originalPrice }) => {
                 </h3>
                 <div className="flex items-center gap-2">
                     <p className="text-sm md:text-base font-black text-black dark:text-white">{price} RWF</p>
-                    {originalPrice && (
+                    {showDiscount && originalPrice && (
                         <p className="text-[10px] md:text-xs text-gray-400 dark:text-gray-500 line-through">{originalPrice} RWF</p>
                     )}
-                    {discountPercentage > 0 && (
+                    {showDiscount && discountPercentage > 0 && (
                         <span className="text-[10px] font-bold text-red-500">-{discountPercentage}%</span>
                     )}
                 </div>

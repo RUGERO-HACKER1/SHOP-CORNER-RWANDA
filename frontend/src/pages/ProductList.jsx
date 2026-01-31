@@ -14,7 +14,7 @@ const ProductList = () => {
     const [filters, setFilters] = useState({
         categories: [],
         sizes: [],
-        priceRange: 500 // Increased default range to ensure products show up
+        priceRange: 100000 // Set to max range so all products appear by default
     });
     const [sort, setSort] = useState('recommended');
 
@@ -96,7 +96,7 @@ const ProductList = () => {
             <div className="flex flex-col md:flex-row gap-8">
                 {/* Sidebar Filters */}
                 <aside className="w-full md:w-64 flex-shrink-0">
-                    <div className="sticky top-24 space-y-10">
+                    <div className="sticky top-24 space-y-10 max-h-[85vh] overflow-y-auto pr-2 pb-10 scrollbar-hide">
                         <div className="bg-white dark:bg-[#1a1a1a] p-6 rounded-2xl shadow-sm border border-gray-100 dark:border-white/5 transition-colors">
                             <h3 className="font-black uppercase tracking-widest text-xs mb-6 text-gray-400 dark:text-gray-500">Categories</h3>
                             <ul className="space-y-3 text-sm">
@@ -158,7 +158,9 @@ const ProductList = () => {
                 {/* Product Grid */}
                 <div className="flex-1">
                     <div className="flex justify-between items-center mb-6">
-                        <h1 className="text-xl font-bold dark:text-white">Clothing ({filteredProducts.length})</h1>
+                        <h1 className="text-xl font-bold dark:text-white">
+                            {filters.categories.length === 1 ? filters.categories[0] : 'All Products'} ({filteredProducts.length})
+                        </h1>
                         <select
                             value={sort}
                             onChange={(e) => setSort(e.target.value)}
@@ -173,7 +175,7 @@ const ProductList = () => {
                     <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
                         {filteredProducts.length > 0 ? (
                             filteredProducts.map(product => (
-                                <ProductCard key={product.id} {...product} />
+                                <ProductCard key={product.id} {...product} showDiscount={false} />
                             ))
                         ) : (
                             <div className="col-span-full text-center py-12 text-gray-500">
