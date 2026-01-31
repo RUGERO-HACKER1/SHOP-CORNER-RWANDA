@@ -520,7 +520,7 @@ const Home = () => {
 
                 {/* TRENDING / FOR YOU SECTION */}
                 <div className="mb-4 text-center relative py-4">
-                    <h2 className="text-xl font-bold relative z-10 bg-gray-50/50 dark:bg-[#0a0a0a] dark:text-white inline-block px-4 transition-colors">For You</h2>
+                    <h2 className="text-xl font-bold relative z-10 bg-gray-50/50 dark:bg-[#0a0a0a] dark:text-white inline-block px-4 transition-colors">{t('home_for_you')}</h2>
                     <div className="absolute top-1/2 left-0 w-full h-px bg-gray-200 dark:bg-white/10 z-0"></div>
                 </div>
 
