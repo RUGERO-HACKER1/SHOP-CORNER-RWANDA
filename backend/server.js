@@ -65,6 +65,7 @@ app.use('/api/orders', require('./routes/order.routes'));
 app.use('/api/reviews', require('./routes/review.routes'));
 app.use('/api/contact', require('./routes/contact.routes'));
 app.use('/api/payments', require('./routes/payment.routes'));
+app.use('/api/ai', require('./routes/ai.routes'));
 
 // Test Route
 app.get('/', (req, res) => res.send('API Running'));

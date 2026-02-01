@@ -147,6 +147,29 @@
     scrollbar-width: none;
 }
 
+/* Animations for AI Assistant */
+@keyframes slide-in-from-bottom-10 {
+    from {
+        transform: translateY(2.5rem);
+        opacity: 0;
+    }
+
+    to {
+        transform: translateY(0);
+        opacity: 1;
+    }
+}
+
+.animate-in {
+    animation-duration: 0.3s;
+    animation-timing-function: ease-out;
+    animation-fill-mode: both;
+}
+
+.slide-in-from-bottom-10 {
+    animation-name: slide-in-from-bottom-10;
+}
+
 /* Glassmorphism utility */
 .glass {
     background: rgba(255, 255, 255, 0.7);

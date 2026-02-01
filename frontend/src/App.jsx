@@ -21,6 +21,7 @@ import Contact from './pages/Contact';
 import Returns from './pages/Returns';
 import { WishlistProvider } from './context/WishlistContext';
 import { ThemeProvider } from './context/ThemeContext';
+import AiAssistant from './components/AiAssistant';
 
 const App = () => {
   const socket = useSocket();
@@ -65,6 +66,7 @@ const App = () => {
             <Route path="/returns" element={<Returns />} />
           </Routes>
           <Footer />
+          <AiAssistant />
         </div>
       </WishlistProvider>
     </ThemeProvider>
