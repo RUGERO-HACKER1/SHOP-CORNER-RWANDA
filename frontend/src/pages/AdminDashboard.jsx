@@ -1,8 +1,8 @@
 
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect, useMemo, useRef } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { useNavigate } from 'react-router-dom';
-import { Trash2, Plus, Upload, X, Package, Users, ShoppingBag, LayoutDashboard, DollarSign, Edit, BarChart, Mail, Menu } from 'lucide-react';
+import { Trash2, Plus, Upload, X, Package, Users, ShoppingBag, LayoutDashboard, DollarSign, Edit, BarChart, Mail, Menu, MapPin, Phone } from 'lucide-react';
 import { useLanguage } from '../context/LanguageContext';
 import { useSocket } from '../context/SocketContext';
 import { API_URL } from '../config';
@@ -29,7 +29,7 @@ const AdminDashboard = () => {
     const [editingProduct, setEditingProduct] = useState(null);
     const [productForm, setProductForm] = useState({
         title: '', description: '', price: '', originalPrice: '',
-        category: 'Dresses', sizes: '', image: null, stockQuantity: 0, variants: []
+        category: 'Dresses', sizes: '', image: null, image2: null, stockQuantity: 0, variants: []
     });
 
     // Order Detail Modal
@@ -111,6 +111,30 @@ const AdminDashboard = () => {
         } catch (err) { console.error(err); }
     };
 
+    const handleUpdateStock = async (id, newQty) => {
+        if (newQty < 0) newQty = 0;
+        try {
+            const token = localStorage.getItem('token');
+            const res = await fetch(`${API_URL}/api/products/${id}/stock`, {
+                method: 'PUT',
+                headers: {
+                    'Content-Type': 'application/json',
+                    Authorization: `Bearer ${token}`
+                },
+                body: JSON.stringify({ stockQuantity: newQty })
+            });
+            if (!res.ok) {
+                const data = await res.json().catch(() => ({}));
+                alert(data.message || 'Failed to update stock');
+                return;
+            }
+            fetchData();
+        } catch (err) {
+            console.error(err);
+            alert('Error updating stock');
+        }
+    };
+
     const handleOpenModal = (product = null) => {
         if (product) {
             setEditingProduct(product);
@@ -122,6 +146,7 @@ const AdminDashboard = () => {
                 category: product.category,
                 sizes: Array.isArray(product.sizes) ? product.sizes.join(',') : product.sizes,
                 image: null,
+                image2: null,
                 stockQuantity: product.stockQuantity || 0,
                 variants: product.variants || []
             });
@@ -129,7 +154,7 @@ const AdminDashboard = () => {
             setEditingProduct(null);
             setProductForm({
                 title: '', description: '', price: '', originalPrice: '',
-                category: 'Dresses', sizes: '', image: null, stockQuantity: 0, variants: []
+                category: 'Dresses', sizes: '', image: null, image2: null, stockQuantity: 0, variants: []
             });
         }
         setIsModalOpen(true);
@@ -224,8 +249,9 @@ const AdminDashboard = () => {
             }
         }
 
-        // Filter Orders
-        const filteredOrders = orders.filter(order => new Date(order.createdAt) >= startDate);
+        // Filter Orders (exclude cancelled from analytics)
+        const nonCancelled = orders.filter(o => (o.status || '').toLowerCase() !== 'cancelled');
+        const filteredOrders = nonCancelled.filter(order => new Date(order.createdAt) >= startDate);
 
         const revenue = filteredOrders.reduce((sum, o) => sum + parseFloat(o.totalAmount || 0), 0).toLocaleString();
         const count = filteredOrders.length;
@@ -275,6 +301,74 @@ const AdminDashboard = () => {
 
         return { revenue, count, orders: filteredOrders, chartPoints };
     }, [orders, timeRange]);
+
+    // Admin Order Map Component
+    const AdminOrderMap = ({ orderId, coordinates }) => {
+        const mapRef = useRef(null);
+        const [mapInitialized, setMapInitialized] = useState(false);
+
+        useEffect(() => {
+            if (!mapRef.current || mapInitialized || !coordinates) return;
+
+            const apiKey = import.meta.env.VITE_GOOGLE_MAPS_API_KEY;
+            if (!apiKey) {
+                console.warn('Google Maps API key missing for admin map');
+                return;
+            }
+
+            const initMap = () => {
+                if (!window.google || !mapRef.current) return;
+
+                const center = { lat: coordinates.lat, lng: coordinates.lng };
+                const map = new window.google.maps.Map(mapRef.current, {
+                    center,
+                    zoom: 15,
+                    mapTypeControl: true,
+                    streetViewControl: true,
+                });
+
+                new window.google.maps.Marker({
+                    map,
+                    position: center,
+                    title: 'Delivery Location',
+                });
+
+                setMapInitialized(true);
+            };
+
+            if (window.google && window.google.maps) {
+                initMap();
+            } else {
+                const script = document.createElement('script');
+                script.src = `https://maps.googleapis.com/maps/api/js?key=${apiKey}`;
+                script.async = true;
+                script.defer = true;
+                script.onload = initMap;
+                document.head.appendChild(script);
+            }
+        }, [orderId, coordinates, mapInitialized]);
+
+        return (
+            <div className="bg-gray-50 dark:bg-black/20 p-4 rounded-lg">
+                <h3 className="font-bold mb-3 dark:text-white">Delivery Location Map</h3>
+                <div
+                    ref={mapRef}
+                    className="w-full h-64 rounded-lg overflow-hidden border border-gray-200 dark:border-white/10"
+                />
+                <p className="text-xs text-gray-500 dark:text-gray-400 mt-2">
+                    Coordinates: {coordinates.lat.toFixed(6)}, {coordinates.lng.toFixed(6)}
+                </p>
+                <a
+                    href={`https://www.google.com/maps?q=${coordinates.lat},${coordinates.lng}`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="text-xs text-shein-red hover:underline mt-2 inline-block"
+                >
+                    Open in Google Maps →
+                </a>
+            </div>
+        );
+    };
 
     // Simple SVG Chart Component
     const Chart = ({ data }) => {
@@ -392,7 +486,12 @@ const AdminDashboard = () => {
                         <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
                             <div className="bg-white dark:bg-[#1a1a1a] p-6 rounded-xl shadow-sm border border-gray-100 dark:border-white/5 transition-colors">
                                 <span className="text-gray-500 dark:text-gray-400 text-sm">{t('adm_total_rev')}</span>
-                                <p className="text-3xl font-bold mt-2 dark:text-white">{orders.reduce((sum, o) => sum + parseFloat(o.totalAmount || 0), 0).toLocaleString()} RWF</p>
+                                <p className="text-3xl font-bold mt-2 dark:text-white">
+                                    {orders
+                                        .filter(o => (o.status || '').toLowerCase() !== 'cancelled')
+                                        .reduce((sum, o) => sum + parseFloat(o.totalAmount || 0), 0)
+                                        .toLocaleString()} RWF
+                                </p>
                             </div>
                             <div className="bg-white dark:bg-[#1a1a1a] p-6 rounded-xl shadow-sm border border-gray-100 dark:border-white/5 transition-colors">
                                 <span className="text-gray-500 dark:text-gray-400 text-sm">{t('adm_total_orders')}</span>
@@ -598,12 +697,29 @@ const AdminDashboard = () => {
                                                 </span>
                                             </td>
                                             <td className="p-4 text-right">
-                                                <button
-                                                    onClick={() => handleOpenModal(p)}
-                                                    className="text-blue-500 hover:text-blue-700 p-1"
-                                                >
-                                                    <Edit size={16} />
-                                                </button>
+                                                <div className="flex items-center justify-end gap-2">
+                                                    <button
+                                                        onClick={() => handleOpenModal(p)}
+                                                        className="text-blue-500 hover:text-blue-700 p-1"
+                                                        title="Edit product"
+                                                    >
+                                                        <Edit size={16} />
+                                                    </button>
+                                                    <button
+                                                        onClick={() => handleUpdateStock(p.id, 0)}
+                                                        className="text-xs px-2 py-1 rounded bg-red-50 text-red-600 hover:bg-red-100 dark:bg-red-500/10 dark:text-red-400"
+                                                        title="Mark out of stock"
+                                                    >
+                                                        Mark Out
+                                                    </button>
+                                                    <button
+                                                        onClick={() => handleUpdateStock(p.id, (p.stockQuantity || 0) + 10)}
+                                                        className="text-xs px-2 py-1 rounded bg-green-50 text-green-700 hover:bg-green-100 dark:bg-green-500/10 dark:text-green-400"
+                                                        title="Add 10 to stock"
+                                                    >
+                                                        +10
+                                                    </button>
+                                                </div>
                                             </td>
                                         </tr>
                                     ))}
@@ -796,9 +912,30 @@ const AdminDashboard = () => {
                                     <input className="w-full border dark:border-white/10 bg-white dark:bg-black dark:text-white p-3 rounded outline-none focus:ring-1 focus:ring-black dark:focus:ring-white" placeholder="Sizes (e.g. S,M,L)" required value={productForm.sizes} onChange={e => setProductForm({ ...productForm, sizes: e.target.value })} />
                                     <input type="number" className="w-full border dark:border-white/10 bg-white dark:bg-black dark:text-white p-3 rounded outline-none focus:ring-1 focus:ring-black dark:focus:ring-white" placeholder="Stock Quantity" required value={productForm.stockQuantity} onChange={e => setProductForm({ ...productForm, stockQuantity: e.target.value })} />
                                 </div>
-                                <div className="border border-dashed dark:border-white/20 p-6 text-center rounded bg-gray-50 dark:bg-black/20">
-                                    <p className="text-xs text-gray-500 dark:text-gray-400 mb-2">Leave empty to keep existing image</p>
-                                    <input type="file" accept="image/*" onChange={e => setProductForm({ ...productForm, image: e.target.files[0] })} className="text-sm dark:text-gray-400" />
+                                <div className="border border-dashed dark:border-white/20 p-6 text-center rounded bg-gray-50 dark:bg-black/20 space-y-3">
+                                    <p className="text-xs text-gray-500 dark:text-gray-400">
+                                        Upload up to two images for this product. Leave empty to keep existing image(s).
+                                    </p>
+                                    <div className="flex flex-col md:flex-row gap-4 justify-center">
+                                        <div className="flex-1">
+                                            <p className="text-xs font-bold mb-1 dark:text-gray-300">Main Image</p>
+                                            <input
+                                                type="file"
+                                                accept="image/*"
+                                                onChange={e => setProductForm({ ...productForm, image: e.target.files[0] })}
+                                                className="text-sm dark:text-gray-400"
+                                            />
+                                        </div>
+                                        <div className="flex-1">
+                                            <p className="text-xs font-bold mb-1 dark:text-gray-300">Second Image (optional)</p>
+                                            <input
+                                                type="file"
+                                                accept="image/*"
+                                                onChange={e => setProductForm({ ...productForm, image2: e.target.files[0] })}
+                                                className="text-sm dark:text-gray-400"
+                                            />
+                                        </div>
+                                    </div>
                                 </div>
                                 <button type="submit" className="w-full bg-black dark:bg-shein-red text-white py-4 rounded-lg font-bold hover:bg-gray-800 dark:hover:bg-red-600 transition-colors shadow-lg">
                                     {editingProduct ? t('adm_update_prod') : t('adm_create_prod')}
@@ -812,8 +949,8 @@ const AdminDashboard = () => {
             {/* Order Details Modal */}
             {
                 selectedOrder && (
-                    <div className="fixed inset-0 bg-black/70 flex items-center justify-center p-4 z-50 transition-colors">
-                        <div className="bg-white dark:bg-[#1a1a1a] p-6 rounded-xl w-full max-w-2xl max-h-[90vh] overflow-y-auto border dark:border-white/10">
+                    <div className="fixed inset-0 bg-black/70 flex items-center justify-center p-4 z-50 transition-colors overflow-y-auto">
+                        <div className="bg-white dark:bg-[#1a1a1a] p-6 rounded-xl w-full max-w-3xl max-h-[90vh] overflow-y-auto border dark:border-white/10 my-8">
                             <div className="flex justify-between items-start mb-6 border-b dark:border-white/10 pb-4">
                                 <div>
                                     <h2 className="text-2xl font-bold dark:text-white">Order #{selectedOrder.id}</h2>
@@ -830,6 +967,53 @@ const AdminDashboard = () => {
                             </div>
 
                             <div className="space-y-6">
+                                {/* Customer & Shipping Info */}
+                                <div className="grid md:grid-cols-2 gap-4">
+                                    <div className="bg-gray-50 dark:bg-black/20 p-4 rounded-lg">
+                                        <h3 className="font-bold mb-3 dark:text-white flex items-center gap-2">
+                                            <Users className="w-4 h-4" /> Customer Information
+                                        </h3>
+                                        <p className="text-sm dark:text-gray-300">
+                                            <span className="font-bold">Name:</span> {selectedOrder.shippingAddress?.name || 'N/A'}
+                                        </p>
+                                        {selectedOrder.shippingAddress?.phone && (
+                                            <p className="text-sm dark:text-gray-300 mt-2 flex items-center gap-2">
+                                                <Phone className="w-4 h-4" />
+                                                <span className="font-bold">Phone:</span> 
+                                                <a href={`tel:${selectedOrder.shippingAddress.phone}`} className="text-shein-red hover:underline">
+                                                    {selectedOrder.shippingAddress.phone}
+                                                </a>
+                                            </p>
+                                        )}
+                                    </div>
+                                    <div className="bg-gray-50 dark:bg-black/20 p-4 rounded-lg">
+                                        <h3 className="font-bold mb-3 dark:text-white flex items-center gap-2">
+                                            <MapPin className="w-4 h-4" /> Delivery Address
+                                        </h3>
+                                        <p className="text-sm dark:text-gray-300">
+                                            {selectedOrder.shippingAddress?.address || 'N/A'}
+                                        </p>
+                                        {selectedOrder.shippingAddress?.city && (
+                                            <p className="text-sm dark:text-gray-300 mt-1">
+                                                {selectedOrder.shippingAddress.city}
+                                            </p>
+                                        )}
+                                        {selectedOrder.shippingAddress?.notes && (
+                                            <p className="text-xs text-gray-500 dark:text-gray-400 mt-2 italic">
+                                                Notes: {selectedOrder.shippingAddress.notes}
+                                            </p>
+                                        )}
+                                    </div>
+                                </div>
+
+                                {/* Map for Delivery Location */}
+                                {selectedOrder.shippingAddress?.coordinates && (
+                                    <AdminOrderMap
+                                        orderId={selectedOrder.id}
+                                        coordinates={selectedOrder.shippingAddress.coordinates}
+                                    />
+                                )}
+
                                 <div>
                                     <h3 className="font-bold mb-3 dark:text-white">Items ({selectedOrder.items?.length || 0})</h3>
                                     <div className="space-y-4">

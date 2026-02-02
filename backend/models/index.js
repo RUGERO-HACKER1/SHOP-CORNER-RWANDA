@@ -38,6 +38,11 @@ const Product = sequelize.define('Product', {
     price: { type: DataTypes.DECIMAL(10, 2), allowNull: false },
     originalPrice: { type: DataTypes.DECIMAL(10, 2) },
     image: { type: DataTypes.STRING },
+    // Optional additional images (e.g. back/side views)
+    images: { type: DataTypes.ARRAY(DataTypes.STRING), defaultValue: [] },
+    // Perceptual hash of `image` for fast visual similarity search
+    // Stored as 16-char hex string (64-bit dHash)
+    imageHash: { type: DataTypes.STRING },
     category: { type: DataTypes.STRING },
     sizes: { type: DataTypes.ARRAY(DataTypes.STRING) },
     stockQuantity: { type: DataTypes.INTEGER, defaultValue: 0 },
@@ -48,7 +53,15 @@ const Order = sequelize.define('Order', {
     totalAmount: { type: DataTypes.DECIMAL(10, 2), allowNull: false },
     status: { type: DataTypes.STRING, defaultValue: 'Pending' },
     shippingAddress: { type: DataTypes.JSONB },
+    // Snapshot of items at the time of order (ids, titles, images, sizes, qty, price)
+    items: { type: DataTypes.JSONB, defaultValue: [] },
     trackingInfo: { type: DataTypes.JSONB, defaultValue: [] } // [{status, time, message}]
+});
+
+// Simple password reset model (email + new password flow)
+const PasswordResetToken = sequelize.define('PasswordResetToken', {
+    email: { type: DataTypes.STRING, allowNull: false },
+    requestedAt: { type: DataTypes.DATE, allowNull: false, defaultValue: DataTypes.NOW }
 });
 
 // Relations
@@ -84,7 +97,8 @@ const db = {
     Order,
     Order,
     Review,
-    ContactMessage
+    ContactMessage,
+    PasswordResetToken
 };
 
 module.exports = db;

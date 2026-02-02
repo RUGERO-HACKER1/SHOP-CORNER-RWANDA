@@ -12,6 +12,7 @@ const Home = () => {
     const { t } = useLanguage();
     const navigate = useNavigate();
     const { user } = useAuth();
+    const [recentOrders, setRecentOrders] = useState([]);
 
     const handleSearch = () => {
         if (searchQuery.trim()) {
@@ -36,33 +37,7 @@ const Home = () => {
 
     const formatTime = (val) => val.toString().padStart(2, '0');
 
-    // Product Categories
-    const categories = [
-        { name: 'Women', img: '/products/1688_image_share_00fd72eb0b77844eaebd4c1f1e5486f5.jpg.jpeg' },
-        { name: 'Curve', img: '/products/1688_image_share_077da0a9225e1f657bfa92fede15526a.jpg.jpeg' },
-        { name: 'Kids', img: '/products/1688_image_share_08be20a33e3de81f897b9a1e6ac44eb3.jpg.jpeg' },
-        { name: 'Men', img: '/products/1688_image_share_0eadaa09a3780d4865e884512dd8a763.jpg.jpeg' },
-        { name: 'Bags & Luggage', img: '/products/1688_image_share_25d220710b5bedd4075e546ae389e3f1.jpg.jpeg' },
-        { name: 'Cell Phones & Accessories', img: '/products/1688_image_share_177e205382cdd5390bdc6be5a8283dc6.jpg.jpeg' },
-        { name: 'Office & School Supplies', img: '/products/1688_image_share_1688_image_share_0640a7086ecfb46bef6070992e12f32a.jpg.jpeg' },
-        { name: 'Jumpsuits & Bodysuits', img: '/products/1688_image_share_42b89e05b94646e2b8d09ad2df4d8169.jpg.jpeg' },
-        { name: 'Jewelry & Accessories', img: '/products/1688_image_share_1447c9a341d4a0cb37663efd88317881.jpg.jpeg' },
-        { name: 'Home & Living', img: '/products/1688_image_share_1ea23752a1751fa69f5f14fb8bcdc372.jpg.jpeg' },
-        { name: 'Tops', img: '/products/1688_image_share_3b04ad8a2ffd638d432292fb58b6b481.jpg.jpeg' },
-        { name: 'Baby & Maternity', img: '/products/1688_image_share_106e1631e02d6e9b50eed28f374e79d7.jpg.jpeg' },
-        { name: 'Sports & Outdoor', img: '/products/1688_image_share_13741cf1be340ca6f56ae6cb3359260d.jpg.jpeg' },
-        { name: 'Automotive', img: '/products/1688_image_share_177e205382cdd5390bdc6be5a8283dc6.jpg.jpeg' },
-        { name: 'Pet Supplies', img: '/products/1688_image_share_1447c9a341d4a0cb37663efd88317881.jpg.jpeg' },
-        { name: 'Denim', img: '/products/1688_image_share_0f2565000bdfaa140f46fa3cfa2d1f4b.jpg.jpeg' },
-        { name: 'Beauty & Health', img: '/products/1688_image_share_00fd72eb0b77844eaebd4c1f1e5486f5.jpg.jpeg' },
-        { name: 'Underwear & Sleepwear', img: '/products/1688_image_share_1ea23752a1751fa69f5f14fb8bcdc372.jpg.jpeg' },
-        { name: 'Dresses', img: '/products/1688_image_share_42b89e05b94646e2b8d09ad2df4d8169.jpg.jpeg' },
-        { name: 'Shoes', img: '/products/1688_image_share_3cc73f2c1b54d0e5823553608b03a2eb.jpg.jpeg' },
-        { name: 'Co-ords', img: '/products/1688_image_share_3b04ad8a2ffd638d432292fb58b6b481.jpg.jpeg' },
-        { name: 'Bottoms', img: '/products/1688_image_share_0f2565000bdfaa140f46fa3cfa2d1f4b.jpg.jpeg' },
-        { name: 'Fall & Winter', img: '/products/1688_image_share_106e1631e02d6e9b50eed28f374e79d7.jpg.jpeg' },
-        { name: 'Customization', img: '/products/1688_image_share_177e205382cdd5390bdc6be5a8283dc6.jpg.jpeg' },
-    ];
+    // Category circles section has been removed to simplify the home page
 
     const [heroSlides, setHeroSlides] = useState([
         {
@@ -121,7 +96,9 @@ const Home = () => {
                 // 1. General Product List logic
                 const enhancedData = data.map((p, idx) => ({
                     ...p,
-                    image: p.image.includes('placehold.co') ? `https://placehold.co/400x500/pink/white?text=Front+${idx + 1}` : p.image
+                    image: (p.image || '').includes('placehold.co')
+                        ? `https://placehold.co/400x500/pink/white?text=Front+${idx + 1}`
+                        : p.image
                 }));
                 setFeaturedProducts(enhancedData);
 
@@ -135,13 +112,13 @@ const Home = () => {
                 if (top2.length > 0) {
                     const newSlides = top2.map((p, i) => {
                         // Pick 3 related/random products for the side grid
-                        const sideProducts = enhancedData
+                                const sideProducts = enhancedData
                             .filter(ip => ip.id !== p.id)
                             .sort(() => 0.5 - Math.random()) // Shuffle
                             .slice(0, 3)
                             .map(sp => ({
                                 img: sp.image,
-                                price: sp.price.toLocaleString() + ' RWF',
+                                price: Number(sp.price).toLocaleString(),
                                 label: sp.title,
                                 highlight: Math.random() > 0.5
                             }));
@@ -158,7 +135,7 @@ const Home = () => {
 
                         return {
                             title: p.title,
-                            subtitle: `Save ${Math.round(((p.originalPrice - p.price) / p.originalPrice) * 100)}% Today`,
+                            subtitle: `${Number(p.price).toLocaleString()} RWF`,
                             bg: bgs[i % bgs.length],
                             img: p.image,
                             accent: accents[i % accents.length],
@@ -173,7 +150,7 @@ const Home = () => {
                         .slice(0, 3)
                         .map(p => ({
                             img: p.image,
-                            price: p.price.toLocaleString() + ' RWF',
+                            price: Number(p.price).toLocaleString(),
                             label: p.title,
                             id: p.id
                         }));
@@ -195,7 +172,7 @@ const Home = () => {
                         .slice(0, 4)
                         .map(p => ({
                             img: p.image,
-                            price: p.price.toLocaleString() + ' RWF',
+                            price: Number(p.price).toLocaleString(),
                             label: p.title,
                             id: p.id
                         }));
@@ -215,6 +192,27 @@ const Home = () => {
             })
             .catch(err => console.error('Error fetching products:', err));
     }, []);
+
+    // Fetch recent orders for logged-in customer
+    useEffect(() => {
+        if (!user) {
+            setRecentOrders([]);
+            return;
+        }
+        const token = localStorage.getItem('token');
+        if (!token) return;
+
+        fetch(`${API_URL}/api/orders/myorders`, {
+            headers: { Authorization: `Bearer ${token}` }
+        })
+            .then(res => res.json())
+            .then(data => {
+                if (Array.isArray(data)) {
+                    setRecentOrders(data.slice(0, 3));
+                }
+            })
+            .catch(err => console.error('Error fetching recent orders:', err));
+    }, [user]);
 
     return (
         <div className="bg-gray-50/50 dark:bg-[#0a0a0a] min-h-screen pb-16 md:pb-12 font-sans transition-colors duration-300 relative">
@@ -297,9 +295,8 @@ const Home = () => {
 
                                         {/* Price Badge */}
                                         <div className="absolute bottom-3 left-3 bg-white/95 dark:bg-black/90 rounded-full px-3 py-1.5 shadow-lg border border-gray-200">
-                                            <span className="text-sm font-black text-shein-red">
-                                                ${product.price?.split(' ')[0] || '0'}
-                                                <span className="text-[9px] align-super opacity-70">.{product.price?.split(' ')[1] || '00'}</span>
+                                            <span className="text-xs font-black text-shein-red">
+                                                {product.price} RWF
                                             </span>
                                         </div>
                                     </Link>
@@ -331,9 +328,8 @@ const Home = () => {
 
                                         {/* Price Badge */}
                                         <div className="absolute bottom-3 left-3 bg-white/95 dark:bg-black/90 rounded-full px-3 py-1.5 shadow-lg border border-gray-200">
-                                            <span className="text-sm font-black text-shein-red">
-                                                ${product.price?.split(' ')[0] || '0'}
-                                                <span className="text-[9px] align-super opacity-70">.{product.price?.split(' ')[1] || '00'}</span>
+                                            <span className="text-xs font-black text-shein-red">
+                                                {product.price} RWF
                                             </span>
                                         </div>
                                     </Link>
@@ -390,6 +386,48 @@ const Home = () => {
                 </div>
             </div>
 
+            {/* QUICK ACCESS: MY ORDERS (for logged-in users) */}
+            {user && (
+                <div className="container mx-auto px-4 mt-6">
+                    <div className="bg-white dark:bg-[#1a1a1a] rounded-xl border border-gray-200 dark:border-white/10 p-4 md:p-5 flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+                        <div>
+                            <p className="text-xs font-bold uppercase tracking-[0.2em] text-gray-500 dark:text-gray-400 mb-1">
+                                YOUR ORDERS
+                            </p>
+                            {recentOrders.length > 0 ? (
+                                <p className="text-sm text-gray-700 dark:text-gray-300">
+                                    You have <span className="font-bold">{recentOrders.length}</span> recent {recentOrders.length === 1 ? 'order' : 'orders'}.
+                                </p>
+                            ) : (
+                                <p className="text-sm text-gray-700 dark:text-gray-300">
+                                    You don&apos;t have any orders yet. Start shopping and track them here.
+                                </p>
+                            )}
+                        </div>
+                        <div className="flex items-center gap-3">
+                            {recentOrders.map(order => (
+                                <button
+                                    key={order.id}
+                                    onClick={() => navigate('/orders')}
+                                    className="hidden md:flex flex-col px-3 py-2 rounded-lg bg-gray-50 dark:bg-black/40 border border-gray-200 dark:border-white/10 text-left"
+                                >
+                                    <span className="text-[11px] text-gray-500 dark:text-gray-400">Order #{order.id}</span>
+                                    <span className="text-xs font-bold text-gray-900 dark:text-white">
+                                        {Number(order.totalAmount).toLocaleString()} RWF • {order.status}
+                                    </span>
+                                </button>
+                            ))}
+                            <button
+                                onClick={() => navigate('/orders')}
+                                className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-black dark:bg-shein-red text-white text-xs font-bold tracking-[0.2em] uppercase hover:bg-gray-800 dark:hover:bg-red-600 transition"
+                            >
+                                View Orders
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
+
             {/* TOP TRENDS SECTION */}
             <div className="bg-white dark:bg-gray-900 py-6 mb-8 border-y border-gray-200 dark:border-gray-800">
                 <div className="container mx-auto px-4">
@@ -403,7 +441,7 @@ const Home = () => {
                     {/* Scrollable Products Container */}
                     <div className="relative">
                         <div className="flex gap-4 overflow-x-auto pb-4 scrollbar-hide scroll-smooth snap-x snap-mandatory">
-                            {featuredProducts.slice(0, 8).map((product, idx) => {
+                                                {featuredProducts.slice(0, 8).map((product, idx) => {
                                 const badges = ['HOT', 'NEW', 'HOT', 'NEW', 'HOT', 'NEW', 'HOT', 'NEW'];
                                 const hashtags = ['#DenimForEveryone', '#SpringMagicList', '#StylishStripes', '#ElegantMaxiDress', '#NeoGirly', '#VDayGiftGuide', '#StreetChic', '#TrendAlert'];
                                 const badgeColors = ['bg-orange-500', 'bg-green-500', 'bg-orange-500', 'bg-green-500', 'bg-orange-500', 'bg-green-500', 'bg-orange-500', 'bg-green-500'];
@@ -450,12 +488,11 @@ const Home = () => {
                                             {/* Bottom Overlay with Hashtag */}
                                             <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/80 to-transparent p-3">
                                                 <h3 className="text-white font-bold text-sm mb-1">{hashtags[idx % hashtags.length]}</h3>
-                                                {product.originalPrice > product.price && (
-                                                    <div className="flex items-center gap-2">
-                                                        <span className="text-white font-black text-lg">${product.price}</span>
-                                                        <span className="text-gray-400 line-through text-sm">${product.originalPrice}</span>
-                                                    </div>
-                                                )}
+                                                <div className="flex items-center gap-2">
+                                                    <span className="text-white font-black text-lg">
+                                                        {Number(product.price).toLocaleString()} RWF
+                                                    </span>
+                                                </div>
                                             </div>
                                         </div>
                                     </Link>
@@ -487,18 +524,6 @@ const Home = () => {
             </div>
 
             <div className="container mx-auto px-4 mt-8">
-                {/* CATEGORY CIRCLES - Product Categories */}
-                <div className="grid grid-cols-4 md:grid-cols-6 lg:grid-cols-8 gap-4 md:gap-6 mb-16 border-b pb-8 border-gray-100 dark:border-white/5">
-                    {categories.map((cat) => (
-                        <Link to={`/products?category=${cat.name}`} key={cat.name} className="flex flex-col items-center group">
-                            <div className="w-20 h-20 md:w-24 md:h-24 lg:w-28 lg:h-28 rounded-full overflow-hidden mb-3 border-2 border-gray-200 dark:border-gray-700 group-hover:border-shein-red transition-all duration-300 p-1 shadow-md group-hover:shadow-xl bg-white dark:bg-gray-800">
-                                <img src={cat.img} alt={cat.name} className="w-full h-full object-cover rounded-full group-hover:scale-110 transition duration-500" />
-                            </div>
-                            <span className="text-[10px] md:text-xs font-semibold text-center text-gray-700 dark:text-gray-300 group-hover:text-shein-red dark:group-hover:text-shein-red transition-colors max-w-[90px] leading-tight">{cat.name}</span>
-                        </Link>
-                    ))}
-                </div>
-
                 {/* FLASH SALE / SUPER DEALS SECTION */}
                 <div className="bg-white dark:bg-[#1a1a1a] p-6 rounded-lg shadow-sm mb-8 transition-colors">
                     <div className="flex justify-between items-center mb-6">

@@ -9,8 +9,12 @@ const OrderSuccess = () => {
                 <h1 className="text-3xl font-bold mb-4 text-gray-900 dark:text-white">Thank You!</h1>
                 <p className="text-xl text-gray-600 dark:text-gray-400 mb-8">Your order has been placed successfully.</p>
                 <div className="text-sm text-gray-500 dark:text-gray-400 mb-8 p-4 bg-gray-50 dark:bg-black/20 rounded">
-                    <p>Order ID: #{Math.floor(Math.random() * 1000000)}</p>
-                    <p>Estimated Delivery: 3-5 Business Days</p>
+                    <p className="font-bold mb-2">Order ID: #{Math.floor(Math.random() * 1000000)}</p>
+                    <p className="mb-2">Estimated Delivery: 3-5 Business Days</p>
+                    <div className="mt-3 pt-3 border-t border-gray-200 dark:border-white/10">
+                        <p className="font-bold text-green-600 dark:text-green-400">💵 Payment on Delivery</p>
+                        <p className="text-xs mt-1">Please have cash ready when our delivery team arrives.</p>
+                    </div>
                 </div>
                 <Link
                     to="/"

@@ -3,7 +3,25 @@ const router = express.Router();
 const db = require('../models');
 const jwt = require('jsonwebtoken');
 
-// Place Order
+// Helper: require admin for sensitive routes
+async function requireAdmin(req, res, next) {
+    try {
+        const token = req.headers.authorization?.split(' ')[1];
+        if (!token) return res.status(401).json({ message: 'Unauthorized' });
+        const decoded = jwt.decode(token);
+        if (!decoded?.id) return res.status(401).json({ message: 'Invalid token' });
+        const user = await db.User.findByPk(decoded.id);
+        if (!user || user.role !== 'admin') {
+            return res.status(403).json({ message: 'Require Admin Role' });
+        }
+        req.user = user;
+        next();
+    } catch (err) {
+        return res.status(401).json({ message: 'Unauthorized' });
+    }
+}
+
+// Place Order (Pay on Delivery)
 router.post('/', async (req, res) => {
     try {
         const { items, totalAmount, shippingAddress } = req.body;
@@ -16,9 +34,12 @@ router.post('/', async (req, res) => {
             } catch (e) { console.error('Token decode failed', e); }
         }
 
-        // Stock Reduction Logic
-        if (items && Array.isArray(items)) {
-            for (const item of items) {
+        const incomingItems = Array.isArray(items) ? items : [];
+        const enrichedItems = [];
+
+        // Stock Reduction Logic + enrich items with product data
+        if (incomingItems.length) {
+            for (const item of incomingItems) {
                 const product = await db.Product.findByPk(item.id);
                 if (product) {
                     // Reduce base stock
@@ -35,6 +56,15 @@ router.post('/', async (req, res) => {
                         }
                     }
                     await product.save();
+
+                    enrichedItems.push({
+                        id: product.id,
+                        title: product.title,
+                        image: product.image,
+                        price: item.price ?? product.price,
+                        quantity: item.quantity || 1,
+                        size: item.size || item.selectedSize || 'ONE_SIZE'
+                    });
                 }
             }
         }
@@ -45,6 +75,7 @@ router.post('/', async (req, res) => {
             shippingAddress,
             status: initialStatus,
             UserId: userId,
+            items: enrichedItems,
             trackingInfo: [
                 { status: initialStatus, time: new Date(), message: 'Your order has been received and is being processed.' }
             ]
@@ -55,13 +86,19 @@ router.post('/', async (req, res) => {
     }
 });
 
-// Get My Orders
+// Get My Orders (for logged-in customer)
 router.get('/myorders', async (req, res) => {
     try {
+        const token = req.headers.authorization?.split(' ')[1];
+        if (!token) return res.status(401).json({ message: 'Unauthorized' });
+
+        const decoded = jwt.decode(token);
+        if (!decoded?.id) return res.status(401).json({ message: 'Invalid token' });
+
         const orders = await db.Order.findAll({
+            where: { UserId: decoded.id },
             order: [['createdAt', 'DESC']]
         });
-        // if (orders.length === 0) { ... } -> Removed mock data
         res.json(orders);
     } catch (err) {
         res.status(500).json({ error: err.message });
@@ -69,7 +106,7 @@ router.get('/myorders', async (req, res) => {
 });
 
 // Admin: Get All Orders
-router.get('/', async (req, res) => {
+router.get('/', requireAdmin, async (req, res) => {
     try {
         const orders = await db.Order.findAll({ order: [['createdAt', 'DESC']] });
         res.json(orders);
@@ -79,7 +116,7 @@ router.get('/', async (req, res) => {
 });
 
 // Admin: Update Order Status
-router.put('/:id/status', async (req, res) => {
+router.put('/:id/status', requireAdmin, async (req, res) => {
     try {
         const { status, message } = req.body;
         const order = await db.Order.findByPk(req.params.id);
@@ -96,20 +133,38 @@ router.put('/:id/status', async (req, res) => {
         order.trackingInfo = [...history, newEntry];
         await order.save();
 
-        // Socket Emission
-        /* const io = req.app.get('io');
-        if (io) {
-            io.emit('orderUpdate', order);
-            if (order.UserId) {
-                io.to(order.UserId.toString()).emit('notification', {
-                    title: 'Order Update',
-                    message: `Your order #${order.id} status is now ${status}`,
-                    orderId: order.id,
-                    type: 'order'
-                });
-            }
-            console.log(`Socket events emitted for order ${order.id}`);
-        } */
+        // Socket emission can be plugged back in if needed
+        res.json(order);
+    } catch (err) {
+        res.status(500).json({ error: err.message });
+    }
+});
+
+// Customer: Cancel own order (if still processing)
+router.put('/:id/cancel', async (req, res) => {
+    try {
+        const token = req.headers.authorization?.split(' ')[1];
+        if (!token) return res.status(401).json({ message: 'Unauthorized' });
+        const decoded = jwt.decode(token);
+        if (!decoded?.id) return res.status(401).json({ message: 'Invalid token' });
+
+        const order = await db.Order.findByPk(req.params.id);
+        if (!order) return res.status(404).json({ message: 'Order not found' });
+        if (order.UserId !== decoded.id) return res.status(403).json({ message: 'Not allowed to cancel this order' });
+        if (order.status.toLowerCase() === 'delivered' || order.status.toLowerCase() === 'cancelled') {
+            return res.status(400).json({ message: 'Order cannot be cancelled' });
+        }
+
+        const history = order.trackingInfo || [];
+        const newEntry = {
+            status: 'Cancelled',
+            time: new Date(),
+            message: 'Order cancelled by customer before delivery.'
+        };
+
+        order.status = 'Cancelled';
+        order.trackingInfo = [...history, newEntry];
+        await order.save();
 
         res.json(order);
     } catch (err) {

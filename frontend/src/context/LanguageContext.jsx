@@ -5,13 +5,14 @@ import { rw } from '../locales/rw';
 const LanguageContext = createContext();
 
 export const LanguageProvider = ({ children }) => {
-    const [language, setLanguage] = useState(localStorage.getItem('language') || 'en');
+    // Force English-only experience, but keep context API intact
+    const [language, setLanguage] = useState('en');
 
     useEffect(() => {
-        localStorage.setItem('language', language);
-    }, [language]);
+        localStorage.setItem('language', 'en');
+    }, []);
 
-    const translations = language === 'en' ? en : rw;
+    const translations = en;
 
     const t = (key) => {
         return translations[key] || key;

@@ -8,6 +8,16 @@ import { SocketProvider } from './context/SocketContext';
 import App from './App.jsx';
 import './index.css';
 
+// Force light mode: ensure root never has the Tailwind `dark` class
+if (typeof document !== 'undefined') {
+  document.documentElement.classList.remove('dark');
+  try {
+    localStorage.removeItem('theme');
+  } catch {
+    // ignore
+  }
+}
+
 ReactDOM.createRoot(document.getElementById('root')).render(
   <React.StrictMode>
     <BrowserRouter>

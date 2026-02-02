@@ -7,6 +7,7 @@ import ProductDetail from './pages/ProductDetail';
 import Wishlist from './pages/Wishlist';
 import Login from './pages/Login';
 import Register from './pages/Register';
+import ForgotPassword from './pages/ForgotPassword';
 import Cart from './pages/Cart';
 import Checkout from './pages/Checkout';
 import OrderSuccess from './pages/OrderSuccess';
@@ -20,8 +21,8 @@ import About from './pages/About';
 import Contact from './pages/Contact';
 import Returns from './pages/Returns';
 import { WishlistProvider } from './context/WishlistContext';
-import { ThemeProvider } from './context/ThemeContext';
 import AiAssistant from './components/AiAssistant';
+import WhatsAppButton from './components/WhatsAppButton';
 
 const App = () => {
   const socket = useSocket();
@@ -41,9 +42,8 @@ const App = () => {
   }, [socket, showToast]);
 
   return (
-    <ThemeProvider>
-      <WishlistProvider>
-        <div className="min-h-screen bg-white dark:bg-black transition-colors duration-300">
+    <WishlistProvider>
+        <div className="min-h-screen bg-white transition-colors duration-300">
           <Navbar />
           <Routes>
             <Route path="/" element={<Home />} />
@@ -54,6 +54,7 @@ const App = () => {
             <Route path="/checkout" element={<Checkout />} />
             <Route path="/login" element={<Login />} />
             <Route path="/register" element={<Register />} />
+            <Route path="/forgot-password" element={<ForgotPassword />} />
             <Route path="/admin" element={<AdminDashboard />} />
             <Route path="/profile" element={<Profile />} />
             <Route path="/wishlist" element={<Wishlist />} />
@@ -66,10 +67,10 @@ const App = () => {
             <Route path="/returns" element={<Returns />} />
           </Routes>
           <Footer />
+          <WhatsAppButton />
           <AiAssistant />
         </div>
       </WishlistProvider>
-    </ThemeProvider>
   );
 };
 

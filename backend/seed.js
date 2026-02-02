@@ -110,9 +110,9 @@ const seed = async () => {
 
         const categories = ['Dresses', 'Tops', 'Bottoms', 'Outerwear', 'Accessories', 'Shoes', 'Bags'];
         const productTitles = [
-            'Vintage Floral Maxi', 'Silk Satin Blouse', 'High-Waist Denim', 'Double-Breasted Blazer',
-            'Leather Crossbody', 'Canvas Sneakers', 'Knit Oversized Sweater', 'Pleated Midi Skirt',
-            'Boho Chic Sandals', 'Quilted Puffer Jacket', 'Classic White Tee', 'Wide Leg Trousers'
+            'Kigali Everyday Tee', 'Nyamirambo Street Hoodie', 'Weekend Market Jeans', 'Downtown Polo Shirt',
+            'Evening Date Dress', 'Classic Leather Tote', 'City Walk Sneakers', 'Soft Lounge Joggers',
+            'Sunday Brunch Shirt', 'Rainy Season Jacket', 'Smart Office Trousers', 'Holiday Party Top'
         ];
 
         const products = [];
@@ -120,25 +120,19 @@ const seed = async () => {
         imageFiles.forEach((file, index) => {
             const category = categories[index % categories.length];
             const baseTitle = productTitles[index % productTitles.length];
-            const sizes = ['S', 'M', 'L', 'XL'];
+            const sizes = [];
             const stockQuantity = Math.floor(Math.random() * 50) + 10;
 
-            const variants = sizes.map(size => ({
-                size,
-                color: index % 2 === 0 ? 'Black' : 'White',
-                stock: Math.floor(stockQuantity / sizes.length)
-            }));
-
             products.push({
-                title: `${baseTitle} ${index + 1}`,
-                description: `Premium quality ${category.toLowerCase()} item featuring modern design and comfortable fit. Perfect for everyday wear or special occasions.`,
-                price: Math.floor(5000 + Math.random() * 45000),
-                originalPrice: Math.floor(60000 + Math.random() * 20000),
+                title: `${baseTitle} #${index + 1}`,
+                description: `Modern ${category.toLowerCase()} piece designed for Kigali lifestyle – easy to style, comfortable all day, and perfect for both city walks and special events.`,
+                price: Math.floor(15000 + Math.random() * 65000),
+                originalPrice: null,
                 image: `/products/${file}`,
                 category: category,
                 sizes: sizes,
                 stockQuantity: stockQuantity,
-                variants: variants
+                variants: []
             });
         });
 

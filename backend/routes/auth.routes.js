@@ -4,6 +4,11 @@ const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 const db = require('../models');
 
+// NOTE: For now we implement a simple "forgot password" flow that
+// allows a user to set a new password by providing their email +
+// new password. In a production setting you'd want an emailed
+// one-time token instead of this simplified approach.
+
 // Register
 router.post('/register', async (req, res) => {
     try {
@@ -20,6 +25,36 @@ router.post('/register', async (req, res) => {
         // End: Fixed to include role
     } catch (err) {
         res.status(500).json({ error: err.message });
+    }
+});
+
+// Simple Forgot Password (email + new password)
+router.post('/forgot-password', async (req, res) => {
+    try {
+        const { email, newPassword } = req.body;
+
+        if (!email || !newPassword) {
+            return res.status(400).json({ message: 'Email and new password are required' });
+        }
+
+        const user = await db.User.findOne({ where: { email } });
+        if (!user) {
+            // Do not reveal whether the email exists
+            return res.status(200).json({ message: 'If this email exists, the password has been updated.' });
+        }
+
+        const hashedPassword = await bcrypt.hash(newPassword, 10);
+        user.password = hashedPassword;
+        await user.save();
+
+        // Optionally log reset event in a simple table
+        if (db.PasswordResetToken) {
+            await db.PasswordResetToken.create({ email });
+        }
+
+        return res.status(200).json({ message: 'Password updated successfully.' });
+    } catch (err) {
+        return res.status(500).json({ error: err.message });
     }
 });
 

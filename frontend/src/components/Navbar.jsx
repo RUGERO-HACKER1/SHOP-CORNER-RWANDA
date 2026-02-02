@@ -1,9 +1,8 @@
-import { Search, ShoppingBag, Heart, User, LogOut, LayoutDashboard, Globe, MessageCircle, Package, Menu, X, Sun, Moon, Shirt, UserCircle, Baby, Users, Sparkles, Footprints, ShoppingCart, Gem, Palette, Smartphone, Home, BookOpen, Bike, PawPrint, Car, CloudSnow, Wand2, Scissors, Columns, Layers, Component, Copy, ShieldCheck, Shield, RefreshCcw, Ship, Wrench, ArrowRight } from 'lucide-react';
+import { Search, ShoppingBag, Heart, User, LogOut, LayoutDashboard, MessageCircle, Package, Menu, X, Shirt, UserCircle, Baby, Users, Sparkles, Footprints, ShoppingCart, Gem, Palette, Smartphone, Home, BookOpen, Bike, PawPrint, Car, CloudSnow, Wand2, Scissors, Columns, Layers, Component, Copy } from 'lucide-react';
 import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { useCart } from '../context/CartContext';
 import { useWishlist } from '../context/WishlistContext';
-import { useTheme } from '../context/ThemeContext';
 import { useLanguage } from '../context/LanguageContext';
 import { useState } from 'react';
 
@@ -12,8 +11,7 @@ const Navbar = () => {
     const { cartCount } = useCart();
     const { wishlist } = useWishlist();
     const navigate = useNavigate();
-    const { theme, toggleTheme } = useTheme();
-    const { language, setLanguage, t } = useLanguage();
+    const { t } = useLanguage();
     const [showUserMenu, setShowUserMenu] = useState(false);
     const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
     const [searchQuery, setSearchQuery] = useState('');
@@ -37,25 +35,14 @@ const Navbar = () => {
 
     return (
         <>
-            <nav className="sticky top-0 z-50 glass shadow-sm font-sans transition-all duration-300 dark:border-white/5">
-                {/* Row 1: Top Bar (Black) - Mocking the top strip */}
-                <div className="bg-white dark:bg-black text-[10px] md:text-xs border-b border-gray-100 dark:border-white/5">
-                    <div className="container mx-auto px-4 h-9 flex items-center justify-between text-gray-600 dark:text-gray-300">
-                        <div className="flex items-center justify-between w-full max-w-sm md:max-w-none md:justify-start md:space-x-12">
-                            <Link to="/" className="hover:text-black dark:hover:text-white transition uppercase tracking-tighter md:tracking-wider whitespace-nowrap text-[8px] xs:text-[10px] md:text-xs">{t('nav_home')}</Link>
-                            <Link to="/products" className="hover:text-black dark:hover:text-white transition uppercase tracking-tighter md:tracking-wider whitespace-nowrap text-[8px] xs:text-[10px] md:text-xs">{t('nav_products')}</Link>
-                            <Link to="/about" className="hover:text-black dark:hover:text-white transition uppercase tracking-tighter md:tracking-wider whitespace-nowrap text-[8px] xs:text-[10px] md:text-xs">{t('nav_about')}</Link>
-                            <Link to="/contact" className="hover:text-black dark:hover:text-white transition uppercase tracking-tighter md:tracking-wider whitespace-nowrap text-[8px] xs:text-[10px] md:text-xs">{t('nav_contact')}</Link>
-                        </div>
-                    </div>
-                </div>
+            <nav className="sticky top-0 z-50 bg-white shadow-sm font-sans transition-all duration-300">
 
                 {/* Row 2: Main Header */}
                 <div className="container mx-auto px-4 h-20 flex items-center justify-between">
                     {/* LEFT: Menu Button & Logo */}
                     <div className="flex items-center gap-2 md:gap-4 flex-1">
                         <button
-                            className="md:hidden text-black dark:text-white p-2 hover:bg-gray-100 dark:hover:bg-white/10 rounded-full transition relative z-[60]"
+                            className="md:hidden text-black p-2 hover:bg-gray-100 rounded-full transition relative z-[60]"
                             onClick={(e) => {
                                 e.stopPropagation();
                                 setIsMobileMenuOpen(true);
@@ -67,16 +54,16 @@ const Navbar = () => {
 
                         {/* Desktop Mega Menu */}
                         <div className="hidden md:flex relative group h-full items-center mr-1">
-                            <button className="flex items-center justify-center hover:bg-gray-100 dark:hover:bg-white/10 w-10 h-10 rounded-full transition text-sm font-bold">
+                            <button className="flex items-center justify-center hover:bg-gray-100 w-10 h-10 rounded-full transition text-sm font-bold">
                                 <Menu className="w-5 h-5" />
                             </button>
 
                             {/* Mega Menu Dropdown */}
-                            <div className="hidden group-hover:block absolute left-0 top-full w-[1300px] bg-white dark:bg-gray-900 shadow-2xl border border-gray-200 dark:border-white/10 rounded-2xl z-50 mt-2">
+                            <div className="hidden group-hover:block absolute left-0 top-full w-[1300px] bg-white shadow-2xl border border-gray-200 rounded-2xl z-50 mt-2">
                                 <div className="flex">
                                     {/* Left Sidebar - Category List */}
-                                    <div className="w-80 border-r border-gray-200 dark:border-white/10 p-6 bg-gray-50 dark:bg-gray-800/50 rounded-bl-2xl">
-                                        <h3 className="text-base font-bold text-gray-500 dark:text-gray-400 mb-6">{t('nav_cat_header')}</h3>
+                                    <div className="w-80 border-r border-gray-200 p-6 bg-gray-50 rounded-bl-2xl">
+                                        <h3 className="text-base font-bold text-gray-500 mb-6">{t('nav_cat_header')}</h3>
                                         <div className="space-y-1 max-h-[500px] overflow-y-auto pr-2">
                                             <Link to="/products?category=Women" className="flex items-center gap-4 px-4 py-3 hover:bg-white dark:hover:bg-gray-700 rounded-lg text-lg transition">
                                                 <Users className="w-6 h-6" />
@@ -179,7 +166,7 @@ const Navbar = () => {
 
                                     {/* Right Side - Featured Categories with Images */}
                                     <div className="flex-1 p-6">
-                                        <h3 className="text-sm font-bold text-gray-700 dark:text-gray-300 mb-4">Categories for you</h3>
+                                        <h3 className="text-sm font-bold text-gray-700 mb-4">Categories for you</h3>
                                         <div className="max-h-[500px] overflow-y-auto pr-2 scrollbar-hide">
                                             <div className="grid grid-cols-5 gap-5">
                                                 <Link to="/products?category=Women" className="group/item text-center">
@@ -479,7 +466,7 @@ const Navbar = () => {
                         </div>
                         <Link to="/" className="flex items-center gap-1 group no-underline hover:opacity-90 transition">
                             <div className="flex flex-col items-start leading-none">
-                                <span className="text-2xl md:text-3xl font-black text-black dark:text-white tracking-tighter uppercase whitespace-nowrap">
+                                <span className="text-2xl md:text-3xl font-black text-black tracking-tighter uppercase whitespace-nowrap">
                                     SHOP<span className="text-shein-red">CORNER</span>
                                 </span>
                                 <span className="block text-[10px] md:text-[11px] tracking-[0.36em] text-shein-red font-black mt-0.5 ml-1">RWANDA</span>
@@ -492,7 +479,7 @@ const Navbar = () => {
                         <input
                             type="text"
                             placeholder={t('nav_search_placeholder')}
-                            className="w-full bg-gray-50 dark:bg-white/5 border-none rounded-full py-2.5 px-6 focus:ring-2 focus:ring-shein-red focus:bg-white dark:focus:bg-black transition-all text-sm placeholder-gray-400 text-black dark:text-white"
+                            className="w-full bg-gray-50 border-none rounded-full py-2.5 px-6 focus:ring-2 focus:ring-shein-red focus:bg-white transition-all text-sm placeholder-gray-400 text-black"
                             value={searchQuery}
                             onChange={(e) => setSearchQuery(e.target.value)}
                             onKeyDown={(e) => e.key === 'Enter' && handleSearch()}
@@ -508,17 +495,19 @@ const Navbar = () => {
                     {/* RIGHT: Mobile Icons & Desktop Icons */}
                     <div className="flex items-center justify-end gap-1 md:gap-6 flex-1">
                         {/* Mobile Icons */}
-                        <div className="flex md:hidden items-center space-x-0.5">
-                            <button onClick={() => setShowMobileSearch(!showMobileSearch)} className="p-2 text-black dark:text-white active:scale-95 transition">
+                        <div className="flex md:hidden items-center space-x-1">
+                            <button onClick={() => setShowMobileSearch(!showMobileSearch)} className="p-2 text-black active:scale-95 transition">
                                 <Search className="w-5 h-5 stroke-2" />
                             </button>
-                            <button
-                                onClick={() => setLanguage(language === 'en' ? 'rw' : 'en')}
-                                className="p-2 text-black dark:text-white font-bold text-[10px]"
-                            >
-                                {language === 'en' ? 'RW' : 'EN'}
-                            </button>
-                            <Link to="/cart" className="p-2 text-black dark:text-white relative">
+                            <Link to="/wishlist" className="p-2 text-black relative">
+                                <Heart className="w-5 h-5 stroke-2" />
+                                {wishlist.length > 0 && (
+                                    <span className="absolute top-1 right-1 bg-red-500 text-white text-[9px] w-3.5 h-3.5 rounded-full flex items-center justify-center font-bold">
+                                        {wishlist.length}
+                                    </span>
+                                )}
+                            </Link>
+                            <Link to="/cart" className="p-2 text-black relative">
                                 <ShoppingBag className="w-5 h-5 stroke-2" />
                                 {cartCount > 0 && (
                                     <span className="absolute top-1 right-1 bg-shein-red text-white text-[9px] w-3.5 h-3.5 rounded-full flex items-center justify-center font-bold">
@@ -530,19 +519,7 @@ const Navbar = () => {
 
                         {/* Desktop Icons */}
                         <div className="hidden md:flex items-center space-x-6">
-                            <button
-                                onClick={toggleTheme}
-                                className="p-2 hover:bg-gray-100 dark:hover:bg-white/10 rounded-full transition-colors"
-                            >
-                                {theme === 'light' ? <Moon className="w-5 h-5 stroke-1" /> : <Sun className="w-5 h-5 stroke-1" />}
-                            </button>
-                            <button
-                                onClick={() => setLanguage(language === 'en' ? 'rw' : 'en')}
-                                className="p-2 hover:bg-gray-100 dark:hover:bg-white/10 rounded-full transition-colors text-[10px] font-bold"
-                            >
-                                {language === 'en' ? 'RW' : 'EN'}
-                            </button>
-                            <Link to="/cart" className="hover:text-gray-600 dark:hover:text-gray-300 transition relative">
+                            <Link to="/cart" className="hover:text-gray-600 transition relative">
                                 <ShoppingBag className="h-6 w-6 stroke-1" />
                                 {cartCount > 0 && (
                                     <span className="absolute -top-1 -right-2 bg-black dark:bg-shein-red text-white text-[10px] w-4 h-4 rounded-full flex items-center justify-center">
@@ -593,7 +570,7 @@ const Navbar = () => {
                                 )}
                             </div>
                             {/* Wishlist */}
-                            <Link to="/wishlist" className="relative hover:text-gray-600 dark:hover:text-gray-300 transition">
+                            <Link to="/wishlist" className="relative hover:text-gray-600 transition">
                                 <Heart className="h-6 w-6 stroke-1" />
                                 {wishlist.length > 0 && (
                                     <span className="absolute -top-1 -right-1 bg-red-500 text-white text-[10px] w-4 h-4 flex items-center justify-center rounded-full">
@@ -619,12 +596,12 @@ const Navbar = () => {
                         />
 
                         {/* Search Bar Container */}
-                        <div className="absolute top-20 left-0 w-full bg-white dark:bg-[#1a1a1a] p-4 border-b border-gray-100 dark:border-white/10 shadow-xl animate-fade-in-up">
+                        <div className="absolute top-20 left-0 w-full bg-white p-4 border-b border-gray-100 shadow-xl animate-fade-in-up">
                             <div className="relative" onClick={(e) => e.stopPropagation()}>
                                 <input
                                     type="text"
                                     placeholder={t('nav_search_placeholder')}
-                                    className="w-full bg-gray-50 dark:bg-white/5 border-none rounded-full py-2.5 px-6 focus:ring-2 focus:ring-shein-red focus:bg-white dark:focus:bg-black transition-all text-sm placeholder-gray-400 text-black dark:text-white"
+                                    className="w-full bg-gray-50 border-none rounded-full py-2.5 px-6 focus:ring-2 focus:ring-shein-red focus:bg-white transition-all text-sm placeholder-gray-400 text-black"
                                     value={searchQuery}
                                     onChange={(e) => setSearchQuery(e.target.value)}
                                     onKeyDown={(e) => e.key === 'Enter' && handleSearch()}
@@ -669,20 +646,11 @@ const Navbar = () => {
                             {/* Menu Content */}
                             <div className="flex-1 overflow-y-auto animate-fade-in">
                                 <div className="py-2">
-                                    <Link to="/" onClick={() => setIsMobileMenuOpen(false)} className="flex items-center px-6 py-4 hover:bg-gray-50 dark:hover:bg-white/5 text-sm font-bold uppercase tracking-wide border-b border-gray-50 dark:border-white/5">
-                                        {t('nav_home')}
+                                    <Link to="/" onClick={() => setIsMobileMenuOpen(false)} className="flex items-center px-6 py-4 hover:bg-gray-50 text-sm font-bold uppercase tracking-wide border-b border-gray-50">
+                                        Home
                                     </Link>
-                                    <Link to="/products" onClick={() => setIsMobileMenuOpen(false)} className="flex items-center px-6 py-4 hover:bg-gray-50 dark:hover:bg-white/5 text-sm font-bold uppercase tracking-wide border-b border-gray-50 dark:border-white/5">
-                                        {t('nav_products')}
-                                    </Link>
-                                    <Link to="/about" onClick={() => setIsMobileMenuOpen(false)} className="flex items-center px-6 py-4 hover:bg-gray-50 dark:hover:bg-white/5 text-sm font-medium border-b border-gray-50 dark:border-white/5">
-                                        {t('nav_about')}
-                                    </Link>
-                                    <Link to="/contact" onClick={() => setIsMobileMenuOpen(false)} className="flex items-center px-6 py-4 hover:bg-gray-50 dark:hover:bg-white/5 text-sm font-medium border-b border-gray-50 dark:border-white/5">
-                                        <MessageCircle className="w-5 h-5 mr-3 opacity-70" /> {t('nav_contact')}
-                                    </Link>
-                                    <Link to="/returns" onClick={() => setIsMobileMenuOpen(false)} className="flex items-center px-6 py-4 hover:bg-gray-50 dark:hover:bg-white/5 text-sm font-medium border-b border-gray-50 dark:border-white/5">
-                                        Returns
+                                    <Link to="/products" onClick={() => setIsMobileMenuOpen(false)} className="flex items-center px-6 py-4 hover:bg-gray-50 text-sm font-bold uppercase tracking-wide border-b border-gray-50">
+                                        Products
                                     </Link>
                                 </div>
 

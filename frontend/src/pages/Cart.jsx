@@ -34,12 +34,14 @@ const Cart = () => {
                             key={`${item.id}-${item.size}`}
                             className="flex flex-col sm:flex-row gap-4 border-b border-gray-100 dark:border-white/5 pb-4 md:pb-6"
                         >
-                            <Link to={`/product/${item.id}`} className="w-full sm:w-24 h-40 sm:h-32 flex-shrink-0">
-                                <img
-                                    src={item.image}
-                                    alt={item.title}
-                                    className="w-full h-full object-cover rounded dark:opacity-80"
-                                />
+                            <Link to={`/product/${item.id}`} className="w-full sm:w-28 md:w-32 h-40 sm:h-32 flex-shrink-0">
+                                <div className="w-full h-full rounded bg-white dark:bg-[#141414] flex items-center justify-center overflow-hidden">
+                                    <img
+                                        src={item.image}
+                                        alt={item.title}
+                                        className="max-w-full max-h-full object-contain dark:opacity-90"
+                                    />
+                                </div>
                             </Link>
 
                             <div className="flex-1">
@@ -57,8 +59,8 @@ const Cart = () => {
 
                                 <p className="text-sm text-gray-500 dark:text-gray-400 mb-4">{t('prod_size')}: {item.size}</p>
 
-                                <div className="flex justify-between items-center">
-                                    <div className="flex items-center border border-gray-300 dark:border-white/10 rounded px-3 py-1 dark:text-white">
+                                <div className="flex justify-between items-center mt-2 sm:mt-0">
+                                    <div className="flex items-center border border-gray-300 dark:border-white/10 rounded-full px-3 py-1 dark:text-white text-xs sm:text-sm">
                                         <button
                                             onClick={() => updateQuantity(item.id, item.size, item.quantity - 1)}
                                             className="p-1 disabled:opacity-50"
@@ -109,6 +111,12 @@ const Cart = () => {
                         </div>
 
                         <div className="space-y-3">
+                            <div className="bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 p-3 rounded-lg mb-3">
+                                <p className="text-xs font-bold text-green-800 dark:text-green-300 mb-1">💰 Pay on Delivery</p>
+                                <p className="text-xs text-green-700 dark:text-green-400">
+                                    Pay when you receive your order. Cash payment accepted.
+                                </p>
+                            </div>
                             <button
                                 onClick={() => navigate('/checkout')}
                                 className="w-full bg-black dark:bg-shein-red text-white font-bold py-3 rounded hover:bg-gray-800 dark:hover:bg-red-600 transition flex items-center justify-center shadow-lg"
@@ -116,15 +124,8 @@ const Cart = () => {
                                 {t('cart_checkout')} <ArrowRight className="w-4 h-4 ml-2" />
                             </button>
                             <div className="text-center">
-                                <span className="text-xs text-gray-500">{t('cart_secure')}</span>
+                                <span className="text-xs text-gray-500 dark:text-gray-400">Free shipping • Secure checkout</span>
                             </div>
-                        </div>
-
-                        {/* Payment Icons Mockup */}
-                        <div className="flex justify-center gap-2 mt-6 opacity-50">
-                            <div className="w-10 h-6 bg-gray-300 rounded" title="Visa"></div>
-                            <div className="w-10 h-6 bg-gray-300 rounded" title="Mastercard"></div>
-                            <div className="w-10 h-6 bg-gray-300 rounded" title="PayPal"></div>
                         </div>
                     </div>
                 </div>

@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
-import { Star, Truck, ShieldCheck, Heart, Share2, Plus, Minus } from 'lucide-react';
+import { Star, Truck, ShieldCheck, Heart, Share2, Plus, Minus, ChevronLeft, ChevronRight } from 'lucide-react';
 import { useCart } from '../context/CartContext';
 import { useAuth } from '../context/AuthContext';
 import { useToast } from '../context/ToastContext';
@@ -18,7 +18,6 @@ const ProductDetail = () => {
     const { toggleWishlist, isInWishlist } = useWishlist();
     const { user } = useAuth();
     const navigate = useNavigate();
-    const [selectedSize, setSelectedSize] = useState('');
     const [quantity, setQuantity] = useState(1);
     const [activeImage, setActiveImage] = useState(0);
     const { t } = useLanguage();
@@ -36,6 +35,15 @@ const ProductDetail = () => {
     // AI Summary State
     const [aiSummary, setAiSummary] = useState('');
     const [aiLoading, setAiLoading] = useState(false);
+
+    // Always scroll to top when opening/changing product
+    useEffect(() => {
+        try {
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+        } catch {
+            // ignore
+        }
+    }, [id]);
 
     // Fetch Reviews
     useEffect(() => {
@@ -75,7 +83,6 @@ const ProductDetail = () => {
                 setProduct({
                     ...data,
                     images: [img, img, img, img],
-                    sizes: (Array.isArray(data.sizes) && data.sizes.length) ? data.sizes : ['XS', 'S', 'M', 'L', 'XL'],
                     description: data.description || "Description not available."
                 });
                 setLoading(false);
@@ -88,10 +95,23 @@ const ProductDetail = () => {
                     })
                     .then(allProducts => {
                         if (Array.isArray(allProducts)) {
+                            // Treat products with similar titles as "other colors" of the same item
+                            const baseTitle = String(data.title || '').split('-')[0].trim().toLowerCase();
                             const related = allProducts
-                                .filter(p => p.category === data.category && p.id !== data.id)
-                                .sort(() => 0.5 - Math.random()) // Shuffle
-                                .slice(0, 4);
+                                .filter(p => p.id !== data.id)
+                                .map(p => ({
+                                    ...p,
+                                    _isSameModel:
+                                        String(p.title || '').toLowerCase().startsWith(baseTitle) &&
+                                        p.category === data.category
+                                }))
+                                .sort((a, b) => {
+                                    // Prefer same-model (different color) variants first
+                                    if (a._isSameModel && !b._isSameModel) return -1;
+                                    if (!a._isSameModel && b._isSameModel) return 1;
+                                    return 0;
+                                })
+                                .slice(0, 8);
                             setRelatedProducts(related);
                         }
                     })
@@ -151,6 +171,16 @@ const ProductDetail = () => {
 
     const images = product.images;
 
+    const nextImage = () => {
+        if (!images || images.length === 0) return;
+        setActiveImage((prev) => (prev + 1) % images.length);
+    };
+
+    const prevImage = () => {
+        if (!images || images.length === 0) return;
+        setActiveImage((prev) => (prev - 1 + images.length) % images.length);
+    };
+
     return (
         <div className="container mx-auto px-4 py-8">
             {/* Breadcrumbs */}
@@ -160,28 +190,85 @@ const ProductDetail = () => {
 
             <div className="flex flex-col lg:flex-row gap-12">
                 {/* Image Gallery */}
-                <div className="w-full lg:w-3/5 flex gap-4">
-                    {/* Thumbnails */}
-                    <div className="hidden md:flex flex-col gap-4 w-24">
+                <div className="w-full lg:w-3/5 flex flex-col md:flex-row gap-4">
+                    {/* Thumbnails (Desktop: left column) */}
+                    <div className="hidden md:flex flex-col gap-4 w-28">
+                        {/* Current product image */}
                         {images.map((img, idx) => (
-                            <img
-                                key={idx}
-                                src={img}
-                                alt={`Thumbnail ${idx}`}
-                                className={`w-full aspect-[3/4] object-cover rounded cursor-pointer border-2 ${activeImage === idx ? 'border-black dark:border-white' : 'border-transparent dark:opacity-60'}`}
+                            <button
+                                key={`main-${idx}`}
+                                type="button"
+                                className={`w-full aspect-[3/4] rounded border-2 overflow-hidden bg-white flex items-center justify-center ${activeImage === idx ? 'border-black dark:border-white' : 'border-transparent dark:opacity-60'
+                                    }`}
                                 onMouseEnter={() => setActiveImage(idx)}
-                            />
+                            >
+                                <img
+                                    src={img}
+                                    alt={`Thumbnail ${idx}`}
+                                    className="max-h-full max-w-full object-contain"
+                                />
+                            </button>
+                        ))}
+
+                        {/* Other colours / similar items as small clickable cards */}
+                        {relatedProducts.slice(0, 4).map((p) => (
+                            <button
+                                key={`rel-${p.id}`}
+                                type="button"
+                                onClick={() => navigate(`/product/${p.id}`)}
+                                className="w-full aspect-[3/4] rounded border border-gray-200 dark:border-white/10 overflow-hidden bg-white dark:bg-black flex items-center justify-center hover:border-black dark:hover:border-white transition"
+                                title={p.title}
+                            >
+                                <img
+                                    src={p.image || img}
+                                    alt={p.title}
+                                    className="max-h-full max-w-full object-contain"
+                                />
+                            </button>
                         ))}
                     </div>
 
                     {/* Main Image */}
-                    <div className="flex-1">
+                    <div className="flex-1 flex items-center justify-center bg-white dark:bg-[#111111] rounded-lg relative">
+                        <button
+                            type="button"
+                            onClick={prevImage}
+                            className="flex absolute left-2 md:left-3 top-1/2 -translate-y-1/2 z-10 w-8 h-8 md:w-9 md:h-9 rounded-full bg-white/90 dark:bg-black/70 border border-gray-200 dark:border-white/20 items-center justify-center shadow-sm hover:bg-white dark:hover:bg-black transition"
+                        >
+                            <ChevronLeft className="w-4 h-4" />
+                        </button>
                         <img
                             src={images[activeImage]}
                             alt={product.title}
                             loading="lazy"
-                            className="w-full aspect-[3/4] object-cover rounded-lg dark:opacity-90"
+                            className="max-h-[420px] md:max-h-[520px] w-full object-contain rounded-lg dark:opacity-90"
                         />
+                        <button
+                            type="button"
+                            onClick={nextImage}
+                            className="flex absolute right-2 md:right-3 top-1/2 -translate-y-1/2 z-10 w-8 h-8 md:w-9 md:h-9 rounded-full bg-white/90 dark:bg-black/70 border border-gray-200 dark:border-white/20 items-center justify-center shadow-sm hover:bg-white dark:hover:bg-black transition"
+                        >
+                            <ChevronRight className="w-4 h-4" />
+                        </button>
+                    </div>
+
+                    {/* Thumbnails (Mobile: horizontal strip under main image) */}
+                    <div className="mt-4 flex md:hidden gap-3 overflow-x-auto pb-1 -mx-1 px-1">
+                        {images.map((img, idx) => (
+                            <button
+                                key={`mobile-main-${idx}`}
+                                type="button"
+                                className={`flex-shrink-0 w-16 h-16 rounded-lg border-2 overflow-hidden bg-white flex items-center justify-center ${activeImage === idx ? 'border-black' : 'border-transparent'
+                                    }`}
+                                onClick={() => setActiveImage(idx)}
+                            >
+                                <img
+                                    src={img}
+                                    alt={`View ${idx + 1}`}
+                                    className="max-h-full max-w-full object-contain"
+                                />
+                            </button>
+                        ))}
                     </div>
                 </div>
 
@@ -200,40 +287,9 @@ const ProductDetail = () => {
                     </div>
 
                     <div className="flex items-baseline gap-4 mb-2">
-                        <span className="text-3xl font-bold text-shein-red">{product.price.toLocaleString()} RWF</span>
-                        <span className="text-lg text-gray-400 dark:text-gray-500 line-through">{product.originalPrice.toLocaleString()} RWF</span>
-                        <span className="bg-shein-red/10 text-shein-red px-2 py-1 text-xs font-bold rounded">-24%</span>
-                    </div>
-
-                    {/* Stock Status */}
-                    <div className="mb-6">
-                        <span className={`text-sm font-bold ${(selectedSize ? (product.variants?.find(v => v.size === selectedSize)?.stock || 0) : (product.stockQuantity || 0)) <= 0 ? 'text-red-500' :
-                            (selectedSize ? (product.variants?.find(v => v.size === selectedSize)?.stock || 0) : (product.stockQuantity || 0)) < 5 ? 'text-orange-500' : 'text-green-600'
-                            }`}>
-                            {(selectedSize ? (product.variants?.find(v => v.size === selectedSize)?.stock || 0) : (product.stockQuantity || 0)) <= 0 ? t('prod_out_of_stock') :
-                                (selectedSize ? (product.variants?.find(v => v.size === selectedSize)?.stock || 0) : (product.stockQuantity || 0)) < 5 ? `${t('prod_only')} ${(selectedSize ? (product.variants?.find(v => v.size === selectedSize)?.stock || 0) : product.stockQuantity)} ${t('prod_left')}` : t('prod_in_stock')}
+                        <span className="text-3xl font-bold text-shein-red">
+                            {Number(product.price).toLocaleString()} RWF
                         </span>
-                    </div>
-
-                    {/* Size Selector */}
-                    <div className="mb-8 font-sans">
-                        <div className="flex justify-between mb-2">
-                            <span className="font-bold dark:text-white">{t('prod_size')}: {selectedSize || t('nav_search_placeholder').slice(0, 5)}</span>
-                            <button className="text-sm underline text-gray-500 dark:text-gray-400">{t('prod_size_guide')}</button>
-                        </div>
-                        <div className="flex flex-wrap gap-3">
-                            {product.sizes.map(size => (
-                                <button
-                                    key={size}
-                                    onClick={() => setSelectedSize(size)}
-                                    className={`w-12 h-12 rounded-full border flex items-center justify-center transition font-bold
-                    ${selectedSize === size ? 'bg-black dark:bg-shein-red text-white border-black dark:border-shein-red' : 'border-gray-300 dark:border-white/10 dark:text-gray-300 hover:border-black dark:hover:border-white'}
-                  `}
-                                >
-                                    {size}
-                                </button>
-                            ))}
-                        </div>
                     </div>
 
                     {/* Quantity & Actions */}
@@ -245,17 +301,13 @@ const ProductDetail = () => {
                         </div>
                         <button
                             onClick={() => {
-                                if (!selectedSize) {
-                                    addToast('Please select a size first!', 'error');
-                                    return;
-                                }
-                                addToCart(product, selectedSize, quantity);
+                                addToCart(product, 'ONE_SIZE', quantity);
                                 addToast(`Added ${quantity} item(s) to cart`, 'success');
                             }}
-                            disabled={(selectedSize ? (product.variants?.find(v => v.size === selectedSize)?.stock || 0) : (product.stockQuantity || 0)) <= 0}
+                            disabled={(product.stockQuantity || 0) <= 0}
                             className="flex-1 bg-black dark:bg-shein-red text-white font-bold rounded-full py-3 hover:bg-gray-800 dark:hover:bg-red-600 transition shadow-lg disabled:bg-gray-400 dark:disabled:bg-white/10 disabled:cursor-not-allowed"
                         >
-                            {(selectedSize ? (product.variants?.find(v => v.size === selectedSize)?.stock || 0) : (product.stockQuantity || 0)) <= 0 ? t('prod_out_of_stock') : t('prod_add_to_cart')}
+                            {(product.stockQuantity || 0) <= 0 ? t('prod_out_of_stock') : t('prod_add_to_cart')}
                         </button>
                         <button
                             onClick={() => toggleWishlist(product)}
@@ -395,7 +447,7 @@ const ProductDetail = () => {
             {/* Related Products - Full Width */}
             <div className="mt-12 pt-8 border-t dark:border-white/10">
                 <h3 className="font-bold text-xl mb-6 dark:text-white">{t('prod_related')}</h3>
-                <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4">
                     {relatedProducts.map(p => (
                         <ProductCard
                             key={p.id}
@@ -403,7 +455,6 @@ const ProductDetail = () => {
                             image={p.image}
                             title={p.title}
                             price={p.price}
-                            originalPrice={p.originalPrice}
                         />
                     ))}
                 </div>
