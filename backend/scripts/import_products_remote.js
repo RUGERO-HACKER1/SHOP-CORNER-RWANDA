@@ -14,6 +14,7 @@ async function importProducts() {
         console.log(`Found ${data.length} products to import.`);
 
         let count = 0;
+        let updatedCount = 0;
         for (const p of data) {
             // Check for duplicate by image or title to avoid overwriting unique IDs differently
             const [product, created] = await db.Product.findOrCreate({
@@ -24,10 +25,13 @@ async function importProducts() {
             if (created) {
                 count++;
             } else {
-                // Optional: Update existing?
-                // await product.update(p);
+                // Update existing product with massive sync data
+                await product.update(p);
+                updatedCount++;
             }
         }
+
+        console.log(`Import complete. Created ${count} new, Updated ${updatedCount} existing products.`);
 
         console.log(`Import complete. Added ${count} new products.`);
     } catch (e) {
