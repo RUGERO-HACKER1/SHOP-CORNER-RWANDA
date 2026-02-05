@@ -51,6 +51,10 @@ db.sequelize.sync({ alter: true })
             try {
                 const seed = require('./seed');
                 await seed();
+
+                // FORCE: Sync products from backup
+                const importRemote = require('./scripts/import_products_remote');
+                await importRemote();
             } catch (err) {
                 console.error('Auto-seed failed:', err);
             }

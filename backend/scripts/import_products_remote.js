@@ -32,9 +32,14 @@ async function importProducts() {
         console.log(`Import complete. Added ${count} new products.`);
     } catch (e) {
         console.error('Import error:', e);
-    } finally {
-        try { await db.sequelize.close(); } catch (e) { }
     }
+    // Do NOT close here if running as module in server
 }
 
-importProducts();
+module.exports = importProducts;
+
+if (require.main === module) {
+    importProducts().then(() => {
+        try { db.sequelize.close(); } catch (e) { }
+    });
+}
