@@ -718,7 +718,7 @@ const AdminDashboard = () => {
                 {activeTab === 'products' && (
                     <div>
                         <div className="flex justify-between items-center mb-6">
-                            <h2 className="text-2xl font-bold dark:text-white">{t('adm_products')}</h2>
+                            <h2 className="text-2xl font-bold dark:text-white">{t('adm_products')} ({products.length})</h2>
                             <button
                                 onClick={() => handleOpenModal()}
                                 className="bg-black dark:bg-shein-red text-white px-4 py-2 rounded-lg flex items-center gap-2 hover:bg-gray-800 dark:hover:bg-red-600 transition-colors"
