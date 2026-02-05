@@ -2,7 +2,7 @@
 import { useState, useEffect, useMemo, useRef } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { useNavigate } from 'react-router-dom';
-import { Trash2, Plus, Upload, X, Package, Users, ShoppingBag, LayoutDashboard, DollarSign, Edit, BarChart, Mail, Menu, MapPin, Phone } from 'lucide-react';
+import { Trash2, Plus, Upload, X, Package, Users, ShoppingBag, LayoutDashboard, DollarSign, Edit, BarChart, Mail, Menu, MapPin, Phone, CheckCircle } from 'lucide-react';
 import { useLanguage } from '../context/LanguageContext';
 import { useSocket } from '../context/SocketContext';
 import { API_URL } from '../config';
@@ -68,12 +68,24 @@ const AdminDashboard = () => {
             const token = localStorage.getItem('token');
             const headers = { Authorization: `Bearer ${token}` };
 
+            const checkAuth = async (res) => {
+                if (res.status === 401) {
+                    logout();
+                    // Optional: alert('Session expired. Please login again.');
+                    return false;
+                }
+                return true;
+            };
+
             const [resProd, resOrd, resUsers, resMsgs] = await Promise.all([
                 fetch(`${API_URL}/api/products`),
                 fetch(`${API_URL}/api/orders`, { headers }),
                 fetch(`${API_URL}/api/auth`, { headers }),
                 fetch(`${API_URL}/api/contact`, { headers })
             ]);
+
+            // Check if any admin endpoint returned 401
+            if (!(await checkAuth(resOrd)) || !(await checkAuth(resUsers))) return;
 
             setProducts(await resProd.json());
             const ordersData = await resOrd.json();
@@ -85,6 +97,51 @@ const AdminDashboard = () => {
         } catch (err) { console.error('Data fetch failed', err); }
     };
 
+
+
+    const handleShareLocation = async (orderId) => {
+        if (!navigator.geolocation) {
+            alert('Geolocation is not supported by your browser');
+            return;
+        }
+
+        const confirmShare = window.confirm("Share your current location as the order's tracking location?");
+        if (!confirmShare) return;
+
+        navigator.geolocation.getCurrentPosition(async (position) => {
+            try {
+                const token = localStorage.getItem('token');
+                const res = await fetch(`${API_URL}/api/orders/${orderId}/location`, {
+                    method: 'PUT',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        Authorization: `Bearer ${token}`
+                    },
+                    body: JSON.stringify({
+                        lat: position.coords.latitude,
+                        lng: position.coords.longitude
+                    })
+                });
+
+                if (res.ok) {
+                    const updatedOrder = await res.json();
+                    setOrders(prev => prev.map(o => o.id === updatedOrder.id ? updatedOrder : o));
+                    if (selectedOrder && selectedOrder.id === updatedOrder.id) {
+                        setSelectedOrder(updatedOrder);
+                    }
+                    alert('Location shared! The customer can now see this location.');
+                } else {
+                    alert('Failed to share location');
+                }
+            } catch (err) {
+                console.error(err);
+                alert('Error sharing location');
+            }
+        }, (error) => {
+            console.error(error);
+            alert('Unable to retrieve your location. Allow location access.');
+        });
+    };
     const fetchSentiment = async () => {
         setIsSentimentLoading(true);
         try {
@@ -138,23 +195,48 @@ const AdminDashboard = () => {
     const handleOpenModal = (product = null) => {
         if (product) {
             setEditingProduct(product);
+
+            // Extract related IDs from variants if it exists (assuming it's stored as [id1, id2] or {related: [id1]})
+            let relatedIdsStr = '';
+            if (Array.isArray(product.variants)) {
+                relatedIdsStr = product.variants.join(', ');
+            } else if (product.variants && Array.isArray(product.variants.relatedIds)) {
+                relatedIdsStr = product.variants.relatedIds.join(', ');
+            }
+
             setProductForm({
                 title: product.title,
                 description: product.description,
                 price: product.price,
+                // Hidden fields get defaults or existing values
                 originalPrice: product.originalPrice || '',
-                category: product.category,
-                sizes: Array.isArray(product.sizes) ? product.sizes.join(',') : product.sizes,
-                image: null,
-                image2: null,
-                stockQuantity: product.stockQuantity || 0,
-                variants: product.variants || []
+                category: product.category || 'General',
+                sizes: Array.isArray(product.sizes) ? product.sizes.join(',') : (product.sizes || 'One Size'),
+                // Image Handling
+                image: null, // New Main Image (file)
+                newGalleryFiles: [], // New Gallery Images (files)
+                currentImages: Array.isArray(product.images)
+                    ? product.images
+                    : (typeof product.images === 'string'
+                        ? (product.images.startsWith('[') ? JSON.parse(product.images) : [product.images])
+                        : (product.image ? [product.image] : [])), // Existing URLs
+                stockQuantity: product.stockQuantity || 100,
+                // We use 'variants' field to store the RELATED IDs string for the form input
+                variants: relatedIdsStr
             });
         } else {
             setEditingProduct(null);
             setProductForm({
-                title: '', description: '', price: '', originalPrice: '',
-                category: 'Dresses', sizes: '', image: null, image2: null, stockQuantity: 0, variants: []
+                title: '',
+                description: '',
+                price: '',
+                // Defaults for new products since fields are hidden
+                originalPrice: '',
+                category: 'General',
+                sizes: 'One Size',
+                image: null,
+                stockQuantity: 100,
+                variants: '' // Empty string for new product
             });
         }
         setIsModalOpen(true);
@@ -164,9 +246,43 @@ const AdminDashboard = () => {
         e.preventDefault();
         try {
             const formData = new FormData();
+
+            // Handle regular fields
             Object.keys(productForm).forEach(key => {
+                if (key === 'variants' || key === 'newGalleryFiles' || key === 'currentImages' || key === 'image') return; // Handle these manually
                 if (productForm[key] !== null) formData.append(key, productForm[key]);
             });
+
+            // Handle Related IDs (Variants)
+            // Parse string "1, 2" -> Array [1, 2] -> JSON String "[1,2]"
+            let variantsArray = [];
+            if (typeof productForm.variants === 'string') {
+                variantsArray = productForm.variants.split(',')
+                    .map(s => parseInt(s.trim()))
+                    .filter(n => !isNaN(n));
+            } else if (Array.isArray(productForm.variants)) {
+                variantsArray = productForm.variants;
+            }
+            formData.append('variants', JSON.stringify(variantsArray));
+
+            // Handle Images
+            if (productForm.image) {
+                formData.append('image', productForm.image);
+            }
+            // Gallery Images (New)
+            if (productForm.newGalleryFiles && productForm.newGalleryFiles.length > 0) {
+                productForm.newGalleryFiles.forEach(file => {
+                    formData.append('images', file);
+                });
+            }
+            // Existing Images (to keep)
+            if (productForm.currentImages && productForm.currentImages.length > 0) {
+                formData.append('existingImages', JSON.stringify(productForm.currentImages));
+            } else {
+                formData.append('existingImages', JSON.stringify([]));
+            }
+
+
             const token = localStorage.getItem('token');
 
             const url = editingProduct
@@ -180,11 +296,19 @@ const AdminDashboard = () => {
                 body: formData
             });
 
+            if (res.status === 401) {
+                logout();
+                alert('Session expired. Please login again.');
+                return;
+            }
+
             if (res.ok) {
                 setIsModalOpen(false);
                 fetchData();
+                alert(editingProduct ? 'Product updated successfully!' : 'Product created successfully!');
             } else {
-                alert('Operation failed');
+                const data = await res.json().catch(() => ({}));
+                alert(data.message || 'Operation failed');
             }
         } catch (err) { console.error(err); }
     };
@@ -669,6 +793,7 @@ const AdminDashboard = () => {
                                         return true;
                                     }).map(p => (
                                         <tr key={p.id} className="border-b border-gray-100 dark:border-white/5 hover:bg-gray-50 dark:hover:bg-white/5 transition">
+                                            <td className="p-4 font-mono text-xs dark:text-gray-400">#{p.id}</td>
                                             <td className="p-4">
                                                 <div className="flex items-center gap-3">
                                                     <img src={p.image} className="w-10 h-10 rounded object-cover" alt="" />
@@ -757,6 +882,7 @@ const AdminDashboard = () => {
                             <table className="w-full text-left">
                                 <thead className="bg-gray-50 dark:bg-black/40 border-b border-gray-100 dark:border-white/5">
                                     <tr className="dark:text-gray-300">
+                                        <th className="p-4 font-semibold text-sm">ID</th>
                                         <th className="p-4 font-semibold text-sm">{t('adm_order_id')}</th>
                                         <th className="p-4 font-semibold text-sm">{t('adm_date')}</th>
                                         <th className="p-4 font-semibold text-sm">{t('adm_customer')}</th>
@@ -902,47 +1028,38 @@ const AdminDashboard = () => {
                                 <button onClick={() => setIsModalOpen(false)} className="dark:text-white"><X /></button>
                             </div>
                             <form onSubmit={handleSubmitProduct} className="space-y-4">
-                                <input className="w-full border dark:border-white/10 bg-white dark:bg-black dark:text-white p-3 rounded outline-none focus:ring-1 focus:ring-black dark:focus:ring-white" placeholder="Title" required value={productForm.title} onChange={e => setProductForm({ ...productForm, title: e.target.value })} />
-                                <textarea className="w-full border dark:border-white/10 bg-white dark:bg-black dark:text-white p-3 rounded outline-none focus:ring-1 focus:ring-black dark:focus:ring-white min-h-[100px]" placeholder="Description" required value={productForm.description} onChange={e => setProductForm({ ...productForm, description: e.target.value })} />
-                                <div className="grid grid-cols-2 gap-4">
+                                <div>
+                                    <label className="block text-sm font-bold mb-1 dark:text-white">Product Name</label>
+                                    <input className="w-full border dark:border-white/10 bg-white dark:bg-black dark:text-white p-3 rounded outline-none focus:ring-1 focus:ring-black dark:focus:ring-white" placeholder="Product Name" required value={productForm.title} onChange={e => setProductForm({ ...productForm, title: e.target.value })} />
+                                </div>
+
+                                <div>
+                                    <label className="block text-sm font-bold mb-1 dark:text-white">Price (RWF)</label>
                                     <input type="number" className="w-full border dark:border-white/10 bg-white dark:bg-black dark:text-white p-3 rounded outline-none focus:ring-1 focus:ring-black dark:focus:ring-white" placeholder="Price" required value={productForm.price} onChange={e => setProductForm({ ...productForm, price: e.target.value })} />
-                                    <input type="number" className="w-full border dark:border-white/10 bg-white dark:bg-black dark:text-white p-3 rounded outline-none focus:ring-1 focus:ring-black dark:focus:ring-white" placeholder="Original Price" value={productForm.originalPrice} onChange={e => setProductForm({ ...productForm, originalPrice: e.target.value })} />
                                 </div>
-                                <div className="grid grid-cols-2 gap-4">
-                                    <input className="w-full border dark:border-white/10 bg-white dark:bg-black dark:text-white p-3 rounded outline-none focus:ring-1 focus:ring-black dark:focus:ring-white" placeholder="Sizes (e.g. S,M,L)" required value={productForm.sizes} onChange={e => setProductForm({ ...productForm, sizes: e.target.value })} />
-                                    <input type="number" className="w-full border dark:border-white/10 bg-white dark:bg-black dark:text-white p-3 rounded outline-none focus:ring-1 focus:ring-black dark:focus:ring-white" placeholder="Stock Quantity" required value={productForm.stockQuantity} onChange={e => setProductForm({ ...productForm, stockQuantity: e.target.value })} />
+
+                                <div>
+                                    <label className="block text-sm font-bold mb-1 dark:text-white">Description</label>
+                                    <textarea className="w-full border dark:border-white/10 bg-white dark:bg-black dark:text-white p-3 rounded outline-none focus:ring-1 focus:ring-black dark:focus:ring-white min-h-[100px]" placeholder="Description" required value={productForm.description} onChange={e => setProductForm({ ...productForm, description: e.target.value })} />
                                 </div>
-                                <div className="border border-dashed dark:border-white/20 p-6 text-center rounded bg-gray-50 dark:bg-black/20 space-y-3">
-                                    <p className="text-xs text-gray-500 dark:text-gray-400">
-                                        Upload up to two images for this product. Leave empty to keep existing image(s).
-                                    </p>
-                                    <div className="flex flex-col md:flex-row gap-4 justify-center">
-                                        <div className="flex-1">
-                                            <p className="text-xs font-bold mb-1 dark:text-gray-300">Main Image</p>
-                                            <input
-                                                type="file"
-                                                accept="image/*"
-                                                onChange={e => setProductForm({ ...productForm, image: e.target.files[0] })}
-                                                className="text-sm dark:text-gray-400"
-                                            />
-                                        </div>
-                                        <div className="flex-1">
-                                            <p className="text-xs font-bold mb-1 dark:text-gray-300">Second Image (optional)</p>
-                                            <input
-                                                type="file"
-                                                accept="image/*"
-                                                onChange={e => setProductForm({ ...productForm, image2: e.target.files[0] })}
-                                                className="text-sm dark:text-gray-400"
-                                            />
-                                        </div>
-                                    </div>
+
+                                <div className="pt-4 border-t dark:border-white/10 text-left">
+                                    <p className="text-xs font-bold mb-1 dark:text-gray-300">Product Image</p>
+                                    <input
+                                        type="file"
+                                        accept="image/*"
+                                        onChange={e => setProductForm({ ...productForm, image: e.target.files[0] })}
+                                        className="text-sm dark:text-gray-400 block w-full"
+                                        required={!editingProduct}
+                                    />
                                 </div>
+
                                 <button type="submit" className="w-full bg-black dark:bg-shein-red text-white py-4 rounded-lg font-bold hover:bg-gray-800 dark:hover:bg-red-600 transition-colors shadow-lg">
                                     {editingProduct ? t('adm_update_prod') : t('adm_create_prod')}
                                 </button>
                             </form>
                         </div>
-                    </div>
+                    </div >
                 )
             }
 
@@ -962,6 +1079,20 @@ const AdminDashboard = () => {
                                             {selectedOrder.status}
                                         </span>
                                     </div>
+
+                                    <div className="mt-3">
+                                        <button
+                                            onClick={() => handleShareLocation(selectedOrder.id)}
+                                            className="flex items-center gap-2 bg-blue-600 text-white px-3 py-1.5 rounded-full text-xs font-bold hover:bg-blue-700 transition"
+                                        >
+                                            <MapPin className="w-3 h-3" /> Share Current Location
+                                        </button>
+                                        {selectedOrder.currentLocation && (
+                                            <p className="text-xs text-green-600 dark:text-green-400 mt-1 flex items-center gap-1">
+                                                <CheckCircle className="w-3 h-3" /> Location Shared
+                                            </p>
+                                        )}
+                                    </div>
                                 </div>
                                 <button onClick={() => setSelectedOrder(null)} className="p-2 hover:bg-gray-100 dark:hover:bg-white/5 rounded-full transition-colors dark:text-white"><X className="w-6 h-6" /></button>
                             </div>
@@ -979,7 +1110,7 @@ const AdminDashboard = () => {
                                         {selectedOrder.shippingAddress?.phone && (
                                             <p className="text-sm dark:text-gray-300 mt-2 flex items-center gap-2">
                                                 <Phone className="w-4 h-4" />
-                                                <span className="font-bold">Phone:</span> 
+                                                <span className="font-bold">Phone:</span>
                                                 <a href={`tel:${selectedOrder.shippingAddress.phone}`} className="text-shein-red hover:underline">
                                                     {selectedOrder.shippingAddress.phone}
                                                 </a>

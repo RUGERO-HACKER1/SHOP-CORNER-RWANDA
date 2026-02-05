@@ -140,6 +140,25 @@ router.put('/:id/status', requireAdmin, async (req, res) => {
     }
 });
 
+// Admin: Update Order Location (Live Tracking)
+router.put('/:id/location', requireAdmin, async (req, res) => {
+    try {
+        const { lat, lng } = req.body;
+        const order = await db.Order.findByPk(req.params.id);
+        if (!order) return res.status(404).json({ message: 'Order not found' });
+
+        order.currentLocation = { lat, lng, timestamp: new Date() };
+        await order.save();
+
+        // Optional: Emit socket event for real-time tracking if socket was enabled
+        // req.app.get('io')?.emit('orderLocationUpdate', { id: order.id, location: order.currentLocation });
+
+        res.json(order);
+    } catch (err) {
+        res.status(500).json({ error: err.message });
+    }
+});
+
 // Customer: Cancel own order (if still processing)
 router.put('/:id/cancel', async (req, res) => {
     try {

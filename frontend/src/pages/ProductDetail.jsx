@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { Star, Truck, ShieldCheck, Heart, Share2, Plus, Minus, ChevronLeft, ChevronRight } from 'lucide-react';
 import { useCart } from '../context/CartContext';
@@ -20,6 +20,7 @@ const ProductDetail = () => {
     const navigate = useNavigate();
     const [quantity, setQuantity] = useState(1);
     const [activeImage, setActiveImage] = useState(0);
+    const nextProductRef = useRef(null); // Store the calculated "Next Color/Product"
     const { t } = useLanguage();
 
     const [product, setProduct] = useState(null);
@@ -80,9 +81,28 @@ const ProductDetail = () => {
             })
             .then(data => {
                 const img = data.image || "https://placehold.co/600x800/ff4081/white?text=Product";
+
+                let gallery = [];
+                if (Array.isArray(data.images)) {
+                    gallery = data.images;
+                } else if (typeof data.images === 'string') {
+                    try {
+                        gallery = JSON.parse(data.images);
+                    } catch (e) {
+                        // If parse fails, maybe it's a single URL string?
+                        gallery = [data.images];
+                    }
+                }
+
+                // Fallback if empty
+                if (!gallery || gallery.length === 0) {
+                    gallery = [img];
+                }
+
                 setProduct({
                     ...data,
-                    images: [img, img, img, img],
+                    image: img,
+                    images: gallery,
                     description: data.description || "Description not available."
                 });
                 setLoading(false);
@@ -95,24 +115,64 @@ const ProductDetail = () => {
                     })
                     .then(allProducts => {
                         if (Array.isArray(allProducts)) {
-                            // Treat products with similar titles as "other colors" of the same item
-                            const baseTitle = String(data.title || '').split('-')[0].trim().toLowerCase();
-                            const related = allProducts
-                                .filter(p => p.id !== data.id)
-                                .map(p => ({
-                                    ...p,
-                                    _isSameModel:
-                                        String(p.title || '').toLowerCase().startsWith(baseTitle) &&
-                                        p.category === data.category
-                                }))
-                                .sort((a, b) => {
-                                    // Prefer same-model (different color) variants first
-                                    if (a._isSameModel && !b._isSameModel) return -1;
-                                    if (!a._isSameModel && b._isSameModel) return 1;
-                                    return 0;
-                                })
-                                .slice(0, 8);
-                            setRelatedProducts(related);
+                            // 1. Check for Explicitly Linked Variants (Manual Grouping)
+                            let navigableProducts = [];
+                            let manualMode = false;
+
+                            if (data.variants && Array.isArray(data.variants) && data.variants.length > 0) {
+                                // Filter allProducts to find the ones listed in variants
+                                // We include the current product ID just in case it's not in the list, to ensure valid navigation
+                                const relatedIds = data.variants.map(Number);
+                                navigableProducts = allProducts.filter(p => relatedIds.includes(p.id) || p.id === data.id);
+
+                                // Sort by ID to keep order stable, or respect the order in variants?
+                                // Let's respect the user's manual order if possible, but fallback to ID
+                                navigableProducts.sort((a, b) => a.id - b.id);
+                                manualMode = true;
+                            }
+
+                            // 2. Fallback to Category Grouping
+                            if (navigableProducts.length <= 1) { // If only self found or empty
+                                navigableProducts = allProducts
+                                    .filter(p => p.category === data.category)
+                                    .sort((a, b) => a.id - b.id);
+                                manualMode = false;
+                            }
+
+                            // Find current index
+                            const currentIndex = navigableProducts.findIndex(p => p.id === data.id);
+
+                            // Determine the "Next Product"
+                            const nextIndex = (currentIndex + 1) % navigableProducts.length;
+                            const nextProd = navigableProducts[nextIndex];
+
+                            // Update Related Products UI (Bottom Grid)
+                            // If Manual Mode: Show these products specifically.
+                            // If Category Mode: Show random suggestions from category.
+
+                            let suggestions = [];
+                            if (manualMode) {
+                                suggestions = navigableProducts.filter(p => p.id !== data.id);
+                            } else {
+                                suggestions = navigableProducts.filter(p => p.id !== data.id);
+                                // Shuffle or just take first few?
+                                // Let's ensure 'nextProd' is first if exists
+                                if (nextProd && nextProd.id !== data.id) {
+                                    suggestions = [nextProd, ...suggestions.filter(p => p.id !== nextProd.id)].slice(0, 8);
+                                }
+                            }
+
+                            // Store 'nextProduct' specifically in state so we can access it in nextImage
+                            // Actually, I can just attach it to the product object or use a ref?
+                            // Or cleaner: `setRelatedProducts` is used for UI.
+                            // But `nextImage` needs the next ID.
+                            // I will store `nextProductId` in a new state or ref.
+                            // For now, I'll cheat and put it in a global/outer scope variable or better yet:
+                            // Attach it to the 'relatedProducts' array as a custom property? No.
+                            // I will use a ref `nextProductRef`.
+
+                            nextProductRef.current = nextProd;
+                            setRelatedProducts(suggestions);
                         }
                     })
                     .catch(e => console.error("Related products error:", e));
@@ -173,7 +233,24 @@ const ProductDetail = () => {
 
     const nextImage = () => {
         if (!images || images.length === 0) return;
-        setActiveImage((prev) => (prev + 1) % images.length);
+
+        // If we are at the last image, try to go to the next related product (Next Color/Variant)
+        if (activeImage === images.length - 1) {
+            if (nextProductRef.current) {
+                const nextProd = nextProductRef.current;
+                addToast(`Viewing next color: ${nextProd.title}`, 'info');
+                navigate(`/product/${nextProd.id}`);
+            } else if (relatedProducts.length > 0) {
+                // Fallback to first related if ref missing?
+                const nextProd = relatedProducts[0];
+                navigate(`/product/${nextProd.id}`);
+            } else {
+                // Loop back to start if no related products
+                setActiveImage(0);
+            }
+        } else {
+            setActiveImage((prev) => prev + 1);
+        }
     };
 
     const prevImage = () => {
@@ -192,84 +269,19 @@ const ProductDetail = () => {
                 {/* Image Gallery */}
                 <div className="w-full lg:w-3/5 flex flex-col md:flex-row gap-4">
                     {/* Thumbnails (Desktop: left column) */}
-                    <div className="hidden md:flex flex-col gap-4 w-28">
-                        {/* Current product image */}
-                        {images.map((img, idx) => (
-                            <button
-                                key={`main-${idx}`}
-                                type="button"
-                                className={`w-full aspect-[3/4] rounded border-2 overflow-hidden bg-white flex items-center justify-center ${activeImage === idx ? 'border-black dark:border-white' : 'border-transparent dark:opacity-60'
-                                    }`}
-                                onMouseEnter={() => setActiveImage(idx)}
-                            >
-                                <img
-                                    src={img}
-                                    alt={`Thumbnail ${idx}`}
-                                    className="max-h-full max-w-full object-contain"
-                                />
-                            </button>
-                        ))}
 
-                        {/* Other colours / similar items as small clickable cards */}
-                        {relatedProducts.slice(0, 4).map((p) => (
-                            <button
-                                key={`rel-${p.id}`}
-                                type="button"
-                                onClick={() => navigate(`/product/${p.id}`)}
-                                className="w-full aspect-[3/4] rounded border border-gray-200 dark:border-white/10 overflow-hidden bg-white dark:bg-black flex items-center justify-center hover:border-black dark:hover:border-white transition"
-                                title={p.title}
-                            >
-                                <img
-                                    src={p.image || img}
-                                    alt={p.title}
-                                    className="max-h-full max-w-full object-contain"
-                                />
-                            </button>
-                        ))}
-                    </div>
 
                     {/* Main Image */}
                     <div className="flex-1 flex items-center justify-center bg-white dark:bg-[#111111] rounded-lg relative">
-                        <button
-                            type="button"
-                            onClick={prevImage}
-                            className="flex absolute left-2 md:left-3 top-1/2 -translate-y-1/2 z-10 w-8 h-8 md:w-9 md:h-9 rounded-full bg-white/90 dark:bg-black/70 border border-gray-200 dark:border-white/20 items-center justify-center shadow-sm hover:bg-white dark:hover:bg-black transition"
-                        >
-                            <ChevronLeft className="w-4 h-4" />
-                        </button>
                         <img
                             src={images[activeImage]}
                             alt={product.title}
                             loading="lazy"
                             className="max-h-[420px] md:max-h-[520px] w-full object-contain rounded-lg dark:opacity-90"
                         />
-                        <button
-                            type="button"
-                            onClick={nextImage}
-                            className="flex absolute right-2 md:right-3 top-1/2 -translate-y-1/2 z-10 w-8 h-8 md:w-9 md:h-9 rounded-full bg-white/90 dark:bg-black/70 border border-gray-200 dark:border-white/20 items-center justify-center shadow-sm hover:bg-white dark:hover:bg-black transition"
-                        >
-                            <ChevronRight className="w-4 h-4" />
-                        </button>
                     </div>
 
-                    {/* Thumbnails (Mobile: horizontal strip under main image) */}
-                    <div className="mt-4 flex md:hidden gap-3 overflow-x-auto pb-1 -mx-1 px-1">
-                        {images.map((img, idx) => (
-                            <button
-                                key={`mobile-main-${idx}`}
-                                type="button"
-                                className={`flex-shrink-0 w-16 h-16 rounded-lg border-2 overflow-hidden bg-white flex items-center justify-center ${activeImage === idx ? 'border-black' : 'border-transparent'
-                                    }`}
-                                onClick={() => setActiveImage(idx)}
-                            >
-                                <img
-                                    src={img}
-                                    alt={`View ${idx + 1}`}
-                                    className="max-h-full max-w-full object-contain"
-                                />
-                            </button>
-                        ))}
-                    </div>
+
                 </div>
 
                 {/* Product Info */}

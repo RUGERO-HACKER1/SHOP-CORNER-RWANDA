@@ -59,29 +59,57 @@ router.post('/', verifyAdmin, upload.fields([{ name: 'image', maxCount: 1 }, { n
         if (secondaryFile) extraImages.push(secondaryFile.path);
 
         const allImages = imageUrl ? [imageUrl, ...extraImages] : extraImages;
-        const imageHash = imageUrl ? await dHashFromUrl(imageUrl) : null;
-
-        // Handle sizes if sent as string or array
-        let sizesArray = sizes;
-        if (typeof sizes === 'string') {
-            // Try parsing if it's JSON string, else split by comma
+        let imageHash = null;
+        if (imageUrl) {
             try {
-                sizesArray = JSON.parse(sizes);
+                imageHash = await dHashFromUrl(imageUrl);
             } catch (e) {
-                sizesArray = sizes.split(',').map(s => s.trim());
+                console.error("Image hashing failed", e);
             }
+        }
+
+        // Handle sizes (optional now)
+        let sizesArray = [];
+        if (sizes) {
+            if (typeof sizes === 'string') {
+                if (sizes.trim()) {
+                    try {
+                        sizesArray = JSON.parse(sizes);
+                    } catch (e) {
+                        sizesArray = sizes.split(',').map(s => s.trim());
+                    }
+                }
+            } else if (Array.isArray(sizes)) {
+                sizesArray = sizes;
+            }
+        }
+
+        // Helper to parse numbers safely
+        const parseNum = (val) => {
+            if (val === '' || val === null || val === undefined) return null;
+            const n = Number(val);
+            return Number.isFinite(n) ? n : null;
+        };
+
+        const safePrice = parseNum(price);
+        const safeOriginalPrice = parseNum(originalPrice);
+
+        if (safePrice === null) {
+            return res.status(400).json({ message: 'Invalid or missing price' });
         }
 
         const product = await db.Product.create({
             title,
             description,
-            price,
-            originalPrice,
-            category,
+            price: safePrice,
+            originalPrice: safeOriginalPrice,
+            category: category || 'General', // Default category if missing
             sizes: sizesArray,
             image: imageUrl,
             images: allImages,
-            imageHash
+            imageHash,
+            stockQuantity: 100, // Default stock for simplified flow
+            variants: []
         });
 
         res.status(201).json(product);
@@ -91,43 +119,86 @@ router.post('/', verifyAdmin, upload.fields([{ name: 'image', maxCount: 1 }, { n
 });
 
 // Admin: Update Product (supports updating images)
-router.put('/:id', verifyAdmin, upload.fields([{ name: 'image', maxCount: 1 }, { name: 'image2', maxCount: 1 }]), async (req, res) => {
+router.put('/:id', verifyAdmin, upload.fields([{ name: 'image', maxCount: 1 }, { name: 'images', maxCount: 10 }]), async (req, res) => {
     try {
         const product = await db.Product.findByPk(req.params.id);
         if (!product) return res.status(404).json({ message: 'Product not found' });
 
-        const { title, description, price, originalPrice, category, sizes } = req.body;
+        const { title, description, price, originalPrice, category, sizes, existingImages } = req.body;
 
         const files = req.files || {};
-        const primaryFile = files.image && files.image[0];
-        const secondaryFile = files.image2 && files.image2[0];
+        // New main image if uploaded
+        const newMainFile = files.image && files.image[0];
+        // New gallery images
+        const newGalleryFiles = files.images || [];
 
-        const imageUrl = primaryFile ? primaryFile.path : product.image; // Keep old main image if no new one
-        const existingImages = Array.isArray(product.images) ? product.images : (product.image ? [product.image] : []);
-        const extraImages = [];
-        if (secondaryFile) extraImages.push(secondaryFile.path);
+        // Determine Main Image
+        const imageUrl = newMainFile ? newMainFile.path : product.image;
 
-        const allImages = primaryFile
-            ? [imageUrl, ...extraImages]
-            : (existingImages.length ? existingImages : [imageUrl, ...extraImages].filter(Boolean));
+        // Determine Full Gallery
+        // 1. Start with existing images (parsed from body, which might be a JSON string or array)
+        let keptImages = [];
+        if (existingImages) {
+            if (Array.isArray(existingImages)) keptImages = existingImages;
+            else if (typeof existingImages === 'string') {
+                try { keptImages = JSON.parse(existingImages); } catch (e) { keptImages = [existingImages]; }
+            }
+        } else {
+            // If not sent, assume we keep what we have (unless we want to support clearing all)
+            // But usually frontend will send the list of what to keep.
+            // If frontend sends nothing, maybe it means strictly add? 
+            // Let's default to: if 'existingImages' is undefined, we use product.images. 
+            // IF it is sent (even empty), we use it.
+            if (existingImages === undefined) {
+                keptImages = product.images || [];
+            }
+        }
 
-        const imageHash = primaryFile ? await dHashFromUrl(imageUrl) : product.imageHash;
+        const newImagePaths = newGalleryFiles.map(f => f.path);
 
+        // Combine: kept images + new gallery images
+        // Also ensure the main 'imageUrl' is in the list if desired, or keep it separate.
+        // Usually 'images' array contains ALL views.
+        let allImages = [...keptImages, ...newImagePaths];
+
+        // Ensure the main image is also in the list if the list is empty? 
+        // Or just let it be. Shein style usually has main image as part of the gallery.
+        // Let's ensure 'imageUrl' is at least somewhere if allImages is empty.
+        if (allImages.length === 0 && imageUrl) {
+            allImages = [imageUrl];
+        }
+
+        const imageHash = newMainFile ? await dHashFromUrl(imageUrl) : product.imageHash;
+
+        // Helper to parse numbers safely
+        const parseNum = (val) => {
+            if (val === '' || val === null || val === undefined) return null;
+            const n = Number(val);
+            return Number.isFinite(n) ? n : null;
+        };
+
+        const safePrice = parseNum(price);
+        const safeOriginalPrice = parseNum(originalPrice);
+
+        // Sanitize sizes
         let sizesArray = sizes;
         if (typeof sizes === 'string') {
-            try {
-                sizesArray = JSON.parse(sizes);
-            } catch (e) {
-                // If it's a comma-separated string, keep it as array
-                sizesArray = sizes.split(',').map(s => s.trim());
+            if (!sizes.trim()) {
+                sizesArray = [];
+            } else {
+                try {
+                    sizesArray = JSON.parse(sizes);
+                } catch (e) {
+                    sizesArray = sizes.split(',').map(s => s.trim());
+                }
             }
         }
 
         await product.update({
             title,
             description,
-            price,
-            originalPrice,
+            price: safePrice,
+            originalPrice: safeOriginalPrice,
             category,
             sizes: sizesArray,
             image: imageUrl,

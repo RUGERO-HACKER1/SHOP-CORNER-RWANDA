@@ -35,6 +35,16 @@ const Login = () => {
                 </div>
                 <h2 className="text-xl font-bold text-center mb-6 text-gray-500 dark:text-gray-400">Sign In</h2>
 
+                {/* Info for redirection */}
+                <div className="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 p-4 rounded-lg mb-6 text-center">
+                    <p className="text-sm text-blue-800 dark:text-blue-300 font-medium mb-1">
+                        You must have an account to place an order.
+                    </p>
+                    <p className="text-xs text-blue-600 dark:text-blue-400">
+                        Pay when you receive your order (Cash on Delivery).
+                    </p>
+                </div>
+
                 {error && (
                     <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded mb-4 text-sm">
                         {error}

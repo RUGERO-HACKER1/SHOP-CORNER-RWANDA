@@ -55,7 +55,8 @@ const Order = sequelize.define('Order', {
     shippingAddress: { type: DataTypes.JSONB },
     // Snapshot of items at the time of order (ids, titles, images, sizes, qty, price)
     items: { type: DataTypes.JSONB, defaultValue: [] },
-    trackingInfo: { type: DataTypes.JSONB, defaultValue: [] } // [{status, time, message}]
+    trackingInfo: { type: DataTypes.JSONB, defaultValue: [] }, // [{status, time, message}]
+    currentLocation: { type: DataTypes.JSONB } // { lat, lng, timestamp }
 });
 
 // Simple password reset model (email + new password flow)

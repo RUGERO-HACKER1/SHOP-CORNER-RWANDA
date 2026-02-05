@@ -2,9 +2,13 @@ import { Trash2, Plus, Minus, ArrowRight } from 'lucide-react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useCart } from '../context/CartContext';
 import { useLanguage } from '../context/LanguageContext';
+import { useAuth } from '../context/AuthContext';
+import { useToast } from '../context/ToastContext';
 
 const Cart = () => {
     const { cart, removeFromCart, updateQuantity, cartTotal, clearCart } = useCart();
+    const { user } = useAuth();
+    const { addToast } = useToast();
     const navigate = useNavigate();
     const { t } = useLanguage();
 
@@ -118,7 +122,14 @@ const Cart = () => {
                                 </p>
                             </div>
                             <button
-                                onClick={() => navigate('/checkout')}
+                                onClick={() => {
+                                    if (!user) {
+                                        addToast('Please log in to complete your order.', 'info');
+                                        navigate('/login');
+                                    } else {
+                                        navigate('/checkout');
+                                    }
+                                }}
                                 className="w-full bg-black dark:bg-shein-red text-white font-bold py-3 rounded hover:bg-gray-800 dark:hover:bg-red-600 transition flex items-center justify-center shadow-lg"
                             >
                                 {t('cart_checkout')} <ArrowRight className="w-4 h-4 ml-2" />

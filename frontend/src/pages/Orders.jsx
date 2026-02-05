@@ -18,7 +18,6 @@ const Orders = () => {
 
     useEffect(() => {
         const token = localStorage.getItem('token');
-        // In a real app, we'd use the user ID or token to fetch specific orders
         fetch(`${API_URL}/api/orders/myorders`, {
             headers: { Authorization: `Bearer ${token}` }
         })
@@ -26,6 +25,13 @@ const Orders = () => {
             .then(data => {
                 setOrders(data);
                 setLoading(false);
+                // Auto-open the latest order if navigated here recently (or always, for better UX)
+                if (data.length > 0) {
+                    // Optional: Check if we just came from checkout? 
+                    // The user request "direct him to that my orders page" implies seeing the order.
+                    // Let's auto-select the first one (newest).
+                    setSelectedOrder(data[0]);
+                }
             })
             .catch(err => {
                 console.error("Error fetching orders:", err);
@@ -78,7 +84,7 @@ const Orders = () => {
 
     // Load Google Maps for invoice modal
     useEffect(() => {
-        if (!selectedOrder || !selectedOrder.shippingAddress?.coordinates) return;
+        if (!selectedOrder) return;
 
         const apiKey = import.meta.env.VITE_GOOGLE_MAPS_API_KEY;
         if (!apiKey || !invoiceMapRef.current) return;
@@ -100,23 +106,56 @@ const Orders = () => {
     }, [selectedOrder]);
 
     const initInvoiceMap = () => {
-        if (!invoiceMapRef.current || !window.google || !selectedOrder?.shippingAddress?.coordinates) return;
+        if (!invoiceMapRef.current || !window.google || !selectedOrder) return;
 
-        const coords = selectedOrder.shippingAddress.coordinates;
-        const center = { lat: coords.lat, lng: coords.lng };
+        // Default: Delivery Address or Kigali Center
+        let center = { lat: -1.9441, lng: 30.0619 };
+        if (selectedOrder.shippingAddress?.coordinates) {
+            center = selectedOrder.shippingAddress.coordinates;
+        }
 
         const map = new window.google.maps.Map(invoiceMapRef.current, {
             center,
-            zoom: 15,
+            zoom: 14,
             mapTypeControl: true,
             streetViewControl: true,
         });
 
-        new window.google.maps.Marker({
-            map,
-            position: center,
-            title: 'Delivery Location',
-        });
+        // 1. Delivery Marker (Home)
+        if (selectedOrder.shippingAddress?.coordinates) {
+            new window.google.maps.Marker({
+                map,
+                position: selectedOrder.shippingAddress.coordinates,
+                title: 'Delivery Location',
+                icon: 'http://maps.google.com/mapfiles/ms/icons/red-dot.png'
+            });
+        }
+
+        // 2. Live Tracking Marker (Truck)
+        if (selectedOrder.currentLocation) {
+            const trackPos = {
+                lat: parseFloat(selectedOrder.currentLocation.lat),
+                lng: parseFloat(selectedOrder.currentLocation.lng)
+            };
+
+            new window.google.maps.Marker({
+                map,
+                position: trackPos,
+                title: 'Current Order Location',
+                icon: 'http://maps.google.com/mapfiles/ms/icons/blue-truck.png', // Or simple blue dot
+                animation: window.google.maps.Animation.DROP
+            });
+
+            // If we have live location, maybe center on it or fit bounds
+            if (selectedOrder.shippingAddress?.coordinates) {
+                const bounds = new window.google.maps.LatLngBounds();
+                bounds.extend(selectedOrder.shippingAddress.coordinates);
+                bounds.extend(trackPos);
+                map.fitBounds(bounds);
+            } else {
+                map.setCenter(trackPos);
+            }
+        }
     };
 
     if (loading) {
@@ -333,19 +372,33 @@ const Orders = () => {
                                 </div>
                             </div>
 
-                            {/* Map for Delivery Location */}
-                            {selectedOrder.shippingAddress?.coordinates && (
-                                <div className="bg-gray-50 dark:bg-black/20 p-4 rounded-lg">
-                                    <h3 className="font-bold mb-3 dark:text-white">Delivery Location Map</h3>
-                                    <div
-                                        ref={invoiceMapRef}
-                                        className="w-full h-64 rounded-lg overflow-hidden border border-gray-200 dark:border-white/10"
-                                    />
-                                    <p className="text-xs text-gray-500 dark:text-gray-400 mt-2">
-                                        Coordinates: {selectedOrder.shippingAddress.coordinates.lat.toFixed(6)}, {selectedOrder.shippingAddress.coordinates.lng.toFixed(6)}
+                            {/* Map for Delivery Location & Tracking */}
+                            <div className="bg-gray-50 dark:bg-black/20 p-4 rounded-lg">
+                                <h3 className="font-bold mb-3 dark:text-white">Delivery Tracking</h3>
+                                <div
+                                    ref={invoiceMapRef}
+                                    className="w-full h-64 rounded-lg overflow-hidden border border-gray-200 dark:border-white/10"
+                                />
+                                {selectedOrder.currentLocation ? (
+                                    <p className="text-xs text-blue-600 dark:text-blue-400 mt-2 font-bold animate-pulse">
+                                        ● Live Update: Driver is en route
                                     </p>
-                                </div>
-                            )}
+                                ) : (
+                                    <p className="text-xs text-gray-400 mt-2 italic">
+                                        Live tracking not yet started.
+                                    </p>
+                                )}
+
+                                {selectedOrder.shippingAddress?.coordinates ? (
+                                    <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                                        Delivery Point: {selectedOrder.shippingAddress.coordinates.lat.toFixed(6)}, {selectedOrder.shippingAddress.coordinates.lng.toFixed(6)}
+                                    </p>
+                                ) : (
+                                    <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                                        Delivery location: {selectedOrder.shippingAddress?.address || 'Kigali'}
+                                    </p>
+                                )}
+                            </div>
 
                             {/* Order Items */}
                             <div>
@@ -384,6 +437,11 @@ const Orders = () => {
                                 <div className={`inline-flex items-center gap-2 px-3 py-1 rounded-full text-xs font-bold uppercase ${getStatusColor(selectedOrder.status)}`}>
                                     {getStatusIcon(selectedOrder.status)}
                                     {selectedOrder.status}
+                                </div>
+                                <div className="mt-3 p-3 bg-blue-50 dark:bg-blue-900/20 border border-blue-100 dark:border-blue-800 rounded">
+                                    <p className="text-xs text-blue-800 dark:text-blue-300 font-medium">
+                                        Your products are being organized and packed. You will be able to view the live mapping of your delivery here soon.
+                                    </p>
                                 </div>
                             </div>
 

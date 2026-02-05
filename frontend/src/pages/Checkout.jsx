@@ -31,6 +31,15 @@ const Checkout = () => {
         longitude: null,
     });
 
+    // Protect route: Redirect if not logged in
+    useEffect(() => {
+        const token = localStorage.getItem('token');
+        if (!user && !token) {
+            addToast('Please log in to checkout.', 'warning');
+            navigate('/login');
+        }
+    }, [user, navigate, addToast]);
+
     // Load Google Maps (requires valid API key in VITE_GOOGLE_MAPS_API_KEY)
     useEffect(() => {
         const apiKey = import.meta.env.VITE_GOOGLE_MAPS_API_KEY;
@@ -332,7 +341,7 @@ const Checkout = () => {
                             <div>
                                 <h3 className="font-bold text-green-900 dark:text-green-300 mb-2">Pay on Delivery</h3>
                                 <p className="text-sm text-green-800 dark:text-green-400">
-                                    You will pay when you receive your order. Our delivery team accepts cash payments. 
+                                    You will pay when you receive your order. Our delivery team accepts cash payments.
                                     Make sure you have the exact amount ready for a smooth delivery experience.
                                 </p>
                             </div>
