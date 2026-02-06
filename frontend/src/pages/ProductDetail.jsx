@@ -74,6 +74,13 @@ const ProductDetail = () => {
 
     // Fetch Product & Related
     useEffect(() => {
+        // Reset state on ID change to prevnt stale data
+        setLoading(true);
+        setProduct(null);
+        setRelatedProducts([]);
+        setActiveImage(0);
+        nextProductRef.current = null;
+
         fetch(`${API_URL}/api/products/${id}`)
             .then(res => {
                 if (!res.ok) throw new Error('Failed');
@@ -115,64 +122,17 @@ const ProductDetail = () => {
                     })
                     .then(allProducts => {
                         if (Array.isArray(allProducts)) {
-                            // 1. Check for Explicitly Linked Variants (Manual Grouping)
-                            let navigableProducts = [];
-                            let manualMode = false;
+                            // 1. Group by Same Name (As per precise user request)
+                            // "Detailed cycle: Related 1 -> Related 2 -> ... -> Current"
+                            // To achieve a predictable cycle, we must use a STABLE list that doesn't change based on "current".
+                            const sameNameProducts = allProducts
+                                .filter(p => p.title === data.title)
+                                .sort((a, b) => a.id - b.id);
 
-                            if (data.variants && Array.isArray(data.variants) && data.variants.length > 0) {
-                                // Filter allProducts to find the ones listed in variants
-                                // We include the current product ID just in case it's not in the list, to ensure valid navigation
-                                const relatedIds = data.variants.map(Number);
-                                navigableProducts = allProducts.filter(p => relatedIds.includes(p.id) || p.id === data.id);
+                            // We take the top 6 stable products to form the closed cycle (Current + 5 Related).
+                            const navigableProducts = sameNameProducts.slice(0, 6);
 
-                                // Sort by ID to keep order stable, or respect the order in variants?
-                                // Let's respect the user's manual order if possible, but fallback to ID
-                                navigableProducts.sort((a, b) => a.id - b.id);
-                                manualMode = true;
-                            }
-
-                            // 2. Fallback to Category Grouping
-                            if (navigableProducts.length <= 1) { // If only self found or empty
-                                navigableProducts = allProducts
-                                    .filter(p => p.category === data.category)
-                                    .sort((a, b) => a.id - b.id);
-                                manualMode = false;
-                            }
-
-                            // Find current index
-                            const currentIndex = navigableProducts.findIndex(p => p.id === data.id);
-
-                            // Determine the "Next Product"
-                            const nextIndex = (currentIndex + 1) % navigableProducts.length;
-                            const nextProd = navigableProducts[nextIndex];
-
-                            // Update Related Products UI (Bottom Grid)
-                            // If Manual Mode: Show these products specifically.
-                            // If Category Mode: Show random suggestions from category.
-
-                            let suggestions = [];
-                            if (manualMode) {
-                                suggestions = navigableProducts.filter(p => p.id !== data.id);
-                            } else {
-                                suggestions = navigableProducts.filter(p => p.id !== data.id);
-                                // Shuffle or just take first few?
-                                // Let's ensure 'nextProd' is first if exists
-                                if (nextProd && nextProd.id !== data.id) {
-                                    suggestions = [nextProd, ...suggestions.filter(p => p.id !== nextProd.id)].slice(0, 8);
-                                }
-                            }
-
-                            // Store 'nextProduct' specifically in state so we can access it in nextImage
-                            // Actually, I can just attach it to the product object or use a ref?
-                            // Or cleaner: `setRelatedProducts` is used for UI.
-                            // But `nextImage` needs the next ID.
-                            // I will store `nextProductId` in a new state or ref.
-                            // For now, I'll cheat and put it in a global/outer scope variable or better yet:
-                            // Attach it to the 'relatedProducts' array as a custom property? No.
-                            // I will use a ref `nextProductRef`.
-
-                            nextProductRef.current = nextProd;
-                            setRelatedProducts(suggestions);
+                            setRelatedProducts(navigableProducts);
                         }
                     })
                     .catch(e => console.error("Related products error:", e));
@@ -233,24 +193,7 @@ const ProductDetail = () => {
 
     const nextImage = () => {
         if (!images || images.length === 0) return;
-
-        // If we are at the last image, try to go to the next related product (Next Color/Variant)
-        if (activeImage === images.length - 1) {
-            if (nextProductRef.current) {
-                const nextProd = nextProductRef.current;
-                addToast(`Viewing next color: ${nextProd.title}`, 'info');
-                navigate(`/product/${nextProd.id}`);
-            } else if (relatedProducts.length > 0) {
-                // Fallback to first related if ref missing?
-                const nextProd = relatedProducts[0];
-                navigate(`/product/${nextProd.id}`);
-            } else {
-                // Loop back to start if no related products
-                setActiveImage(0);
-            }
-        } else {
-            setActiveImage((prev) => prev + 1);
-        }
+        setActiveImage((prev) => (prev + 1) % images.length);
     };
 
     const prevImage = () => {
@@ -267,21 +210,34 @@ const ProductDetail = () => {
 
             <div className="flex flex-col lg:flex-row gap-12">
                 {/* Image Gallery */}
-                <div className="w-full lg:w-3/5 flex flex-col md:flex-row gap-4">
-                    {/* Thumbnails (Desktop: left column) */}
-
+                {/* Image Gallery */}
+                <div className="w-full lg:w-3/5 flex flex-col gap-4">
 
                     {/* Main Image */}
-                    <div className="flex-1 flex items-center justify-center bg-white dark:bg-[#111111] rounded-lg relative">
+                    <div className="flex-1 flex items-center justify-center bg-white dark:bg-[#111111] rounded-lg relative overflow-hidden group">
                         <img
                             src={images[activeImage]}
                             alt={product.title}
                             loading="lazy"
-                            className="max-h-[420px] md:max-h-[520px] w-full object-contain rounded-lg dark:opacity-90"
+                            className="max-h-[500px] w-full object-contain rounded-lg dark:opacity-90 transition-transform duration-300 group-hover:scale-105"
                         />
+
+
                     </div>
 
-
+                    {/* Thumbnails (Bottom Row) - ONLY Related Products (Same Name) as per request */}
+                    <div className="flex gap-2 overflow-x-auto pb-2 scrollbar-hide">
+                        {relatedProducts.filter(p => p.id !== product.id).slice(0, 5).map((p) => (
+                            <button
+                                key={`rel-${p.id}`}
+                                onClick={() => navigate(`/product/${p.id}`)}
+                                className="flex-shrink-0 w-20 h-20 rounded-md overflow-hidden border-2 border-transparent opacity-80 hover:opacity-100 hover:border-shein-red transition-all relative"
+                                title={p.title}
+                            >
+                                <img src={p.image} alt={p.title} className="w-full h-full object-cover" />
+                            </button>
+                        ))}
+                    </div>
                 </div>
 
                 {/* Product Info */}
@@ -471,7 +427,7 @@ const ProductDetail = () => {
                     ))}
                 </div>
             </div>
-        </div>
+        </div >
     );
 };
 
